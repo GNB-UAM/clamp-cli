@@ -191,7 +191,7 @@ void * writer_thread(void * arg) {
         if (i % args->s_points == 0) {
             msgrcv(args->msqid, (struct msgbuf *)&msg, sizeof(message) - sizeof(long), 1, 0);
 
-            fprintf(f, "%f %f %f %ld\n", msg.absol, msg.data, msg.nerea, msg.lat);
+            fprintf(f, "%f %f %f %f %f %f %ld\n", msg.t_unix, msg.absol, msg.data, msg.nerea, msg.corriente_viva, msg.corriente_model, msg.lat);
         }
     }
     
@@ -216,8 +216,8 @@ void * rt_thread(void * arg) {
     double offset_virtual_a_viva;
     double offset_viva_a_virtual;
 
-    double g_virtual_a_viva=0.3;
-    double g_viva_a_virtual=0.3;
+    double g_virtual_a_viva=0.1;
+    double g_viva_a_virtual=0.2;
     double corriente, valor_recibido = 0;
 
     double rafaga_modelo_pts_hr = 260166.0;
@@ -289,11 +289,14 @@ void * rt_thread(void * arg) {
             msg.data = args->vars[0] *escala_virtual_a_viva + offset_virtual_a_viva;
             msg.lat = ts_result.tv_sec * NSEC_PER_SEC + ts_result.tv_nsec;
             msg.nerea = valor_recibido;
+            msg.t_unix = (ts_iter.tv_sec * NSEC_PER_SEC + ts_iter.tv_nsec) * 0.000001;
+            msg.corriente_viva = syn;
 
             ts_substraction(&ts_start, &ts_iter, &ts_result);
             msg.absol = (ts_result.tv_sec * NSEC_PER_SEC + ts_result.tv_nsec) * 0.000001;
 
             corriente=g_virtual_a_viva * ( args->vars[0] *escala_virtual_a_viva + offset_virtual_a_viva - valor_recibido);
+            msg.corriente_model = corriente;
 
             write_single_data_comedi(session_v, range_info_out_v, maxdata_out_v, args->vars[0] *escala_virtual_a_viva + offset_virtual_a_viva);
 
@@ -312,6 +315,8 @@ void * rt_thread(void * arg) {
         args->func(args->dim, args->dt, args->vars, args->params, syn);
     }
 
+
+    write_single_data_comedi(session_a, range_info_out_a, maxdata_out_a, 0);
     close_device_comedi(d);
     pthread_exit(NULL);
 }

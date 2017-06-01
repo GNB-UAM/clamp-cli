@@ -47,7 +47,7 @@ int main (int argc, char * argv[]) {
 
 			rafaga_modelo_pts_iz = 59324.0;
 		    pts_por_s = 10000.0;
-		    t_rafaga_viva_s = 0.3;
+		    t_rafaga_viva_s = 0.8;
 		    rafaga_viva_pts = pts_por_s * t_rafaga_viva_s;
 
 
@@ -76,12 +76,12 @@ int main (int argc, char * argv[]) {
 
 			rafaga_modelo_pts_hr = 260166.0;
 		    pts_por_s = 10000.0;
-		    t_rafaga_viva_s = 0.4;
+		    t_rafaga_viva_s = 0.2;
 		    rafaga_viva_pts = pts_por_s * t_rafaga_viva_s;
 
-			vars[0] = -2.0;
-			vars[1] = 0.0;
-			vars[2] = 0.0;
+			vars[0] = 1.797032;
+			vars[1] = -4.132035;
+			vars[2] = 1.955857;
 
 			params[I_HR] = 3.0;
 			params[R_HR] = 0.0021;
