@@ -73,7 +73,7 @@ void prepare_real_time (pthread_t id) {
 
 /* CALIBRATION FUNCTIONS (MANU) */
 
-int ini_recibido (double *min, double *minABS, double *max, Comedi_session session_v, comedi_range * range_info_in_v, lsampl_t maxdata_in_v){
+int ini_recibido (double *min, double *minABS, double *max, Comedi_session session, int chan){
     
     /*Vamos a escanear 10000 puntos durante x segundos para determinar min y max*/
     int i=0;
@@ -88,6 +88,12 @@ int ini_recibido (double *min, double *minABS, double *max, Comedi_session sessi
     double mini=999999;
     double miniB=999999;
 
+    int n_channels = 1;
+    int in_channels [1];
+    double ret_values [1];
+
+    in_channels[0] = chan;
+
 
     clock_gettime(CLOCK_MONOTONIC, &ts_target);
     ts_assign (&ts_start,  ts_target);
@@ -96,7 +102,11 @@ int ini_recibido (double *min, double *minABS, double *max, Comedi_session sessi
 
     for (i=0; i<10000*(segs_observo); i++){
         clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts_target, NULL);
-        valor_recibido = read_single_data_comedi(session_v, range_info_in_v, maxdata_in_v);
+        if (read_comedi(session, n_channels, in_channels, ret_values) != 0) {
+            return -1;
+        }
+
+        valor_recibido = ret_values[0];
         
         if(valor_recibido>maxi){
             maxi=valor_recibido;
@@ -191,7 +201,7 @@ void * writer_thread(void * arg) {
         if (i % args->s_points == 0) {
             msgrcv(args->msqid, (struct msgbuf *)&msg, sizeof(message) - sizeof(long), 1, 0);
 
-            fprintf(f, "%f %f %f %ld\n", msg.absol, msg.data, msg.nerea, msg.lat);
+            fprintf(f, "%f %f %f %f %ld\n", msg.t_unix, msg.t_absol, msg.data_model, msg.data_in, msg.lat);
         }
     }
     
@@ -234,35 +244,24 @@ void * rt_thread(void * arg) {
 
 
     comedi_t * d;
-    Comedi_session session_v;
-    comedi_range * range_info_in_v;
-    lsampl_t maxdata_in_v;
-    comedi_range * range_info_out_v;
-    lsampl_t maxdata_out_v;
-
-    Comedi_session session_a;
-    comedi_range * range_info_in_a;
-    lsampl_t maxdata_in_a;
-    comedi_range * range_info_out_a;
-    lsampl_t maxdata_out_a;
+    Comedi_session session;
+    int in_channels [] = {0};
+    int out_channels [] = {0, 1};
+    int n_in_chan = 1;
+    int n_out_chan = 2;
+    double ret_values [1];
+    double out_values [2];
+    int calib_chan = 0;
 
 
 
     d = open_device_comedi("/dev/comedi0");
 
     /*Envia el voltage para ver que hace el modelo*/
-    session_v = create_session_comedi(d, 0, 1, AREF_GROUND, UNIT_volt);
-    range_info_in_v = get_range_info_comedi(session_v, COMEDI_INPUT);
-    maxdata_in_v = get_maxdata_comedi(session_v, COMEDI_INPUT);
-    range_info_out_v = get_range_info_comedi(session_v, COMEDI_OUTPUT);
-    maxdata_out_v = get_maxdata_comedi(session_v, COMEDI_OUTPUT);
+    session = create_session_comedi(d, AREF_GROUND);
 
-    session_a = create_session_comedi(d, 0, 0, AREF_GROUND, UNIT_mA);
-    range_info_in_a = get_range_info_comedi(session_a, COMEDI_INPUT);
-    maxdata_in_a = get_maxdata_comedi(session_a, COMEDI_INPUT);
-    range_info_out_a = get_range_info_comedi(session_a, COMEDI_OUTPUT);
-    maxdata_out_a = get_maxdata_comedi(session_a, COMEDI_OUTPUT);
 
+    //session_a = create_session_comedi(d, 0, 0, AREF_GROUND, UNIT_mA);
 
 
     prepare_real_time(id);
@@ -270,7 +269,7 @@ void * rt_thread(void * arg) {
 
 
     ini_iz(args->vars, &minHR, &minHRabs, &maxHR);
-    if ( ini_recibido (&minV, &minVabs, &maxV, session_v, range_info_in_v, maxdata_in_v) == -1 ) return NULL;
+    if ( ini_recibido (&minV, &minVabs, &maxV, session, calib_chan) == -1 ) return NULL;
     calcula_escala (minHRabs, maxHR, minVabs, maxV, &escala_virtual_a_viva, &escala_viva_a_virtual, &offset_virtual_a_viva, &offset_viva_a_virtual);
 
 
@@ -286,28 +285,30 @@ void * rt_thread(void * arg) {
 
             ts_substraction(&ts_target, &ts_iter, &ts_result);
             msg.id = 1;
-            msg.data = args->vars[0] *escala_virtual_a_viva + offset_virtual_a_viva;
+            msg.data_model = args->vars[0] *escala_virtual_a_viva + offset_virtual_a_viva;
+            msg.data_in = ret_values[0];
             msg.lat = ts_result.tv_sec * NSEC_PER_SEC + ts_result.tv_nsec;
-            msg.nerea = valor_recibido;
 
             ts_substraction(&ts_start, &ts_iter, &ts_result);
-            msg.absol = (ts_result.tv_sec * NSEC_PER_SEC + ts_result.tv_nsec) * 0.000001;
+            msg.t_absol = (ts_result.tv_sec * NSEC_PER_SEC + ts_result.tv_nsec) * 0.000001;
+            msg.t_unix = (ts_iter.tv_sec * NSEC_PER_SEC + ts_iter.tv_nsec) * 0.000001;
 
-            corriente=g_virtual_a_viva * ( args->vars[0] *escala_virtual_a_viva + offset_virtual_a_viva - valor_recibido);
+            out_values[0] = g_virtual_a_viva * ( args->vars[0] * escala_virtual_a_viva + offset_virtual_a_viva - ret_values[0]);
+            out_values[1] = args->vars[0] * escala_virtual_a_viva + offset_virtual_a_viva;
 
-            write_single_data_comedi(session_v, range_info_out_v, maxdata_out_v, args->vars[0] *escala_virtual_a_viva + offset_virtual_a_viva);
-
-            write_single_data_comedi(session_a, range_info_out_a, maxdata_out_a, corriente);
+            write_comedi(session, n_out_chan, out_channels, out_values);
 
             msgsnd(args->msqid, (struct msgbuf *) &msg, sizeof(message) - sizeof(long), IPC_NOWAIT);
 
             ts_add_time(&ts_target, 0, PERIOD);
 
-            valor_recibido = read_single_data_comedi(session_v, range_info_in_v, maxdata_out_v);
+            if (read_comedi(session, n_in_chan, in_channels, ret_values) != 0) {
+                return NULL;
+            }
         }
 
         
-        syn = -( g_viva_a_virtual * ( valor_recibido*escala_viva_a_virtual + offset_viva_a_virtual - args->vars[0] ) );
+        syn = -( g_viva_a_virtual * ( ret_values[0] * escala_viva_a_virtual + offset_viva_a_virtual - args->vars[0] ) );
 
         args->func(args->dim, args->dt, args->vars, args->params, syn);
     }

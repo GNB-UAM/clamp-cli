@@ -21,10 +21,11 @@
 
 typedef struct {
     long id; 
-    double data;
+    double data_in;
+    double data_model;
     long lat;
-    double absol;
-    double nerea;
+    double t_unix;
+    double t_absol;
 } message;
 
 
