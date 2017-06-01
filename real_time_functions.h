@@ -8,6 +8,8 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "comedi_functions.h"
 
 
@@ -20,12 +22,25 @@
 
 
 typedef struct {
-    long id; 
-    double data_in;
-    double data_model;
-    long lat;
+    long id;
     double t_unix;
     double t_absol;
+    int i;
+
+    /* Fichero 1*/ 
+    long lat;
+    double v_model;
+    double v_model_scaled;
+    double c_model;
+    int in_chan;
+    int out_chan;
+    double * data_in;
+    double * data_out;
+
+    /* Fichero 2*/
+    double g_real_to_virtual;
+    double g_virtual_to_real;
+    double ecm; 
 } message;
 
 
@@ -55,6 +70,8 @@ void ts_add_time (struct timespec * ts, int sec, int nsec);
 void ts_assign (struct timespec * ts1,  struct timespec ts2);
 
 void prepare_real_time (pthread_t id);
+
+void copy_1d_array (double * src, double * dst, int n_elems);
 
 void * writer_thread (void * arg);
 

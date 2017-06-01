@@ -186,26 +186,70 @@ void ini_iz (double * vars, double *min, double *minABS, double *max){
 
 
 /* THREADS FUNCTIONS */
+
+void copy_1d_array (double * src, double * dst, int n_elems) {
+    int i;
+
+    for (i = 0; i < n_elems; ++i) {
+        dst[i] = src[i];
+    }
+
+    return;
+}
+
+
 void * writer_thread(void * arg) {
     message msg;
     pthread_t id;
-    FILE * f;
+    FILE * f1, * f2;
     writer_args * args;
-    int i;
+    int i, j;
 
     args = arg;
     id = pthread_self();
-    f = fopen(args->filename, "w");
+
+    char filename_1 [strlen(args->filename) + 3];
+    char filename_2 [strlen(args->filename) + 3];
+
+    if (sprintf(filename_1, "%s_1.txt", args->filename) < 0) {
+        printf("Error creating file 1 name\n;");
+        pthread_exit(NULL);
+    }
+
+    if (sprintf(filename_2, "%s_2.txt", args->filename) < 0) {
+        printf("Error creating file 2 name\n;");
+        pthread_exit(NULL);
+    }
+
+
+    f1 = fopen(filename_1, "w");
+    f2 = fopen(filename_2, "w");
+
+    fprintf(f1, "%d %d", msg.in_chan, msg.out_chan);
 
     for (i = 0; i < args->points * args->s_points; i++) {
         if (i % args->s_points == 0) {
             msgrcv(args->msqid, (struct msgbuf *)&msg, sizeof(message) - sizeof(long), 1, 0);
 
-            fprintf(f, "%f %f %f %f %ld\n", msg.t_unix, msg.t_absol, msg.data_model, msg.data_in, msg.lat);
+            fprintf(f1, "%f %f %d %ld %f %f %f", msg.t_unix, msg.t_absol, msg.i, msg.lat, msg.v_model, msg.v_model_scaled, msg.c_model);
+            fprintf(f2, "%f %d %f %f\n", msg.t_absol, msg.i, msg.g_real_to_virtual, msg.g_virtual_to_real);
+
+            for (j = 0; j < msg.in_chan; ++j) {
+                fprintf(f1, "%f", msg.data_in[j]);
+            }
+
+            for (j = 0; j < msg.out_chan; ++j) {
+                fprintf(f1, "%f", msg.data_out[j]);
+            }
+
+            fprintf(f1, "\n");
+            free(msg.data_in);
+            free(msg.data_out);
         }
     }
     
-    fclose(f);
+    fclose(f1);
+    fclose(f2);
     pthread_exit(NULL);
 }
 
@@ -226,8 +270,8 @@ void * rt_thread(void * arg) {
     double offset_virtual_a_viva;
     double offset_viva_a_virtual;
 
-    double g_virtual_a_viva=0.3;
-    double g_viva_a_virtual=0.3;
+    double g_virtual_to_real=0.3;
+    double g_real_to_virtual=0.3;
     double corriente, valor_recibido = 0;
 
     double rafaga_modelo_pts_hr = 260166.0;
@@ -254,6 +298,10 @@ void * rt_thread(void * arg) {
     int calib_chan = 0;
 
 
+    msg.in_chan = n_in_chan;
+    msg.out_chan = n_out_chan;
+
+
 
     d = open_device_comedi("/dev/comedi0");
 
@@ -278,6 +326,49 @@ void * rt_thread(void * arg) {
     ts_add_time(&ts_target, 0, PERIOD);
 
 
+    for (i = 0; i < 5 * 10000 * args->s_points; i++) {
+        if (i % args->s_points == 0) {
+            clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts_target, NULL);
+            clock_gettime(CLOCK_MONOTONIC, &ts_iter);
+
+            ts_substraction(&ts_target, &ts_iter, &ts_result);
+            msg.id = 1;
+            msg.i = i;
+            msg.v_model_scaled = args->vars[0] * escala_virtual_a_viva + offset_virtual_a_viva;
+            msg.v_model = args->vars[0];
+            msg.c_model = 0;
+            msg.lat = ts_result.tv_sec * NSEC_PER_SEC + ts_result.tv_nsec;
+
+            ts_substraction(&ts_start, &ts_iter, &ts_result);
+            msg.t_absol = (ts_result.tv_sec * NSEC_PER_SEC + ts_result.tv_nsec) * 0.000001;
+            msg.t_unix = (ts_iter.tv_sec * NSEC_PER_SEC + ts_iter.tv_nsec) * 0.000001;
+
+            out_values[0] = msg.c_model;
+            out_values[1] = msg.v_model_scaled;
+
+            msg.data_in = (double *) malloc (sizeof(double) * n_in_chan);
+            msg.data_out = (double *) malloc (sizeof(double) * n_out_chan);
+
+            copy_1d_array(ret_values, msg.data_in, n_in_chan);
+            copy_1d_array(out_values, msg.data_out, n_out_chan);
+
+            msg.g_real_to_virtual = 0;
+            msg.g_virtual_to_real = 0;
+
+            msgsnd(args->msqid, (struct msgbuf *) &msg, sizeof(message) - sizeof(long), IPC_NOWAIT);
+
+            ts_add_time(&ts_target, 0, PERIOD);
+
+            if (read_comedi(session, n_in_chan, in_channels, ret_values) != 0) {
+                close_device_comedi(d);
+                pthread_exit(NULL);
+            }
+        }
+
+        args->func(args->dim, args->dt, args->vars, args->params, syn);
+    }
+
+
     for (i = 0; i < args->points * args->s_points; i++) {
         if (i % args->s_points == 0) {
             clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts_target, NULL);
@@ -285,16 +376,27 @@ void * rt_thread(void * arg) {
 
             ts_substraction(&ts_target, &ts_iter, &ts_result);
             msg.id = 1;
-            msg.data_model = args->vars[0] *escala_virtual_a_viva + offset_virtual_a_viva;
-            msg.data_in = ret_values[0];
+            msg.i = i;
+            msg.v_model_scaled = args->vars[0] * escala_virtual_a_viva + offset_virtual_a_viva;
+            msg.v_model = args->vars[0];
+            msg.c_model = g_virtual_to_real * ( args->vars[0] * escala_virtual_a_viva + offset_virtual_a_viva - ret_values[0]);
             msg.lat = ts_result.tv_sec * NSEC_PER_SEC + ts_result.tv_nsec;
 
             ts_substraction(&ts_start, &ts_iter, &ts_result);
             msg.t_absol = (ts_result.tv_sec * NSEC_PER_SEC + ts_result.tv_nsec) * 0.000001;
             msg.t_unix = (ts_iter.tv_sec * NSEC_PER_SEC + ts_iter.tv_nsec) * 0.000001;
 
-            out_values[0] = g_virtual_a_viva * ( args->vars[0] * escala_virtual_a_viva + offset_virtual_a_viva - ret_values[0]);
-            out_values[1] = args->vars[0] * escala_virtual_a_viva + offset_virtual_a_viva;
+            out_values[0] = msg.c_model;
+            out_values[1] = msg.v_model_scaled;
+
+            msg.g_real_to_virtual = g_real_to_virtual;
+            msg.g_virtual_to_real = g_virtual_to_real;
+
+            msg.data_in = (double *) malloc (sizeof(double) * n_in_chan);
+            msg.data_out = (double *) malloc (sizeof(double) * n_out_chan);
+
+            copy_1d_array(ret_values, msg.data_in, n_in_chan);
+            copy_1d_array(out_values, msg.data_out, n_out_chan);
 
             write_comedi(session, n_out_chan, out_channels, out_values);
 
@@ -303,12 +405,13 @@ void * rt_thread(void * arg) {
             ts_add_time(&ts_target, 0, PERIOD);
 
             if (read_comedi(session, n_in_chan, in_channels, ret_values) != 0) {
-                return NULL;
+                close_device_comedi(d);
+                pthread_exit(NULL);
             }
         }
 
         
-        syn = -( g_viva_a_virtual * ( ret_values[0] * escala_viva_a_virtual + offset_viva_a_virtual - args->vars[0] ) );
+        syn = -( g_real_to_virtual * ( ret_values[0] * escala_viva_a_virtual + offset_viva_a_virtual - args->vars[0] ) );
 
         args->func(args->dim, args->dt, args->vars, args->params, syn);
     }

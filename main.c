@@ -25,6 +25,13 @@ int main (int argc, char * argv[]) {
 	int err;
 	int msqid;
 
+	time_t t;
+	struct tm tm;
+	char path [15];
+	char hour [9];
+	char filename [19];
+
+
 	writer_args w_args;
 	rt_args r_args;
 
@@ -114,10 +121,26 @@ int main (int argc, char * argv[]) {
         return(0);
     }
 
+
+    t = time(NULL);
+	tm = *localtime(&t);
+	sprintf(path, "data/%d_%d_%d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+	sprintf(hour, "/%d_%d_%d", tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+
+	struct stat st = {0};
+
+	if (stat(path, &st) == -1) {
+		mkdir(path, 0700);
+	}
+
+	strcat(filename, path);
+	strcat(filename, hour);
+
     r_args.msqid = msqid;
     r_args.points = atoi(argv[2]) * 10000;
 
-    w_args.filename = argv[1];
+    w_args.filename = filename;
     w_args.points = r_args.points;
     w_args.s_points = r_args.s_points;
     w_args.msqid = msqid;
