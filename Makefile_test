@@ -1,0 +1,14 @@
+CC = gcc
+
+
+test_main: test_main.o model_library.o
+	$(CC) -o test_main test_main.o model_library.o
+
+test_main.o: test_main.c model_library.c model_library.h
+	$(CC) -c test_main.c
+
+model_library.o: model_library.c model_library.h
+	$(CC) -c model_library.c
+
+clean:
+	rm -f test_main *.o
