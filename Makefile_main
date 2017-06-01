@@ -1,5 +1,5 @@
 CC = gcc
-LIBS_COMEDI = -lcomedi -lm
+LIBS_COMEDI = -g -lcomedi -lm
 LIBS_RT = -lpthread -D_GNU_SOURCE
 
 main: main.o model_library.o real_time_functions.o comedi_functions.o

@@ -14,8 +14,29 @@ ap.add_argument("-t", "--title", required=True,
 	help="title")
 args = vars(ap.parse_args())
 
-dataset = pd.read_csv(args["file"], delimiter=' ', header=None)
+dataset = pd.read_csv(args["file"], delimiter=' ', header=1)
 array = dataset.values
+
+n_in_chan = 2
+n_out_chan = 2
+data = array[1:,:]
+
+t_unix = data[:, 0]
+t_absol = data[:,1]
+i = data[:,2]
+lat = data[:, 3]
+
+v_model = data[:, 4]
+v_model_scaled = data[:, 5]
+c_model = data[:, 6]
+
+data_in = []
+for j in range(7, 7 + n_in_chan):
+	data_in.append(data[:, j])
+
+data_out = []
+for j in range(7 + n_in_chan, 7 + n_in_chan + n_out_chan):
+	data_out.append(data[:, j])
 
 '''
 iteration
@@ -37,15 +58,10 @@ awake = array[:,6]
 sleep = array[:,7]
 '''
 
-absol = array[:,0]
-v = array[:,1]
-n = array[:,2]
-lat = array[:,3]
 
 
-def plot_voltage(n_points):
-	plt.plot(absol[:n_points], v[:n_points], '-', label="Model")
-	plt.plot(absol[:n_points], n[:n_points], '-', label="Nerea")
+def plot_voltage(n_points, v):
+	plt.plot(t_absol[:n_points], v[:n_points], '-')
 	plt.title(args["title"])
 	plt.xlabel("Time (ms)")
 	plt.ylabel("Voltage (mV)")
@@ -261,12 +277,14 @@ def plot_lat_dist2():
 
 
 #Main
-plot_voltage(len(v))
+plot_voltage(len(v_model), v_model)
+plot_voltage(len(data_in[0]), data_in[0])
+plot_voltage(len(data_in[1]), data_in[1])
 #plot_model_time()
 #plot_iter_time()
 #plot_iter_model_time()
 #plot_awake_time()
-plot_lat_dist()
+#plot_lat_dist()
 #plot_lat_dist2()
 #plot_sleep_time()
 #plot_together()

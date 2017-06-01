@@ -107,6 +107,7 @@ int read_comedi (Comedi_session session, int n_channels, int * channels, double 
     	if (read_single_data_comedi (session, range_info, maxdata, channels[i], &aux) == 0) {
     		ret[i] = aux;
     	} else {
+    		printf("Error reading from channel %d at iter %d\n", channels[i], i);
     		return -1;
     	}
     }

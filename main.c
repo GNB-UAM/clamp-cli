@@ -28,7 +28,7 @@ int main (int argc, char * argv[]) {
 	time_t t;
 	struct tm tm;
 	char path [15];
-	char hour [9];
+	char hour [12];
 	char filename [19];
 
 
@@ -45,7 +45,7 @@ int main (int argc, char * argv[]) {
     double rafaga_viva_pts;
 
 
-	int model = atoi(argv[3]);
+	int model = atoi(argv[2]);
 
 	switch (model){
 		case IZHIKEVICH:
@@ -125,20 +125,22 @@ int main (int argc, char * argv[]) {
     t = time(NULL);
 	tm = *localtime(&t);
 	sprintf(path, "data/%d_%d_%d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
-	sprintf(hour, "/%d_%d_%d", tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+	filename[0] = '\0';
+	strcat(filename, path);
 
 
 	struct stat st = {0};
 
 	if (stat(path, &st) == -1) {
-		mkdir(path, 0700);
+		mkdir(path, 0777);
 	}
 
-	strcat(filename, path);
+	sprintf(hour, "/%dh_%dm_%ds", tm.tm_hour, tm.tm_min, tm.tm_sec);
 	strcat(filename, hour);
 
     r_args.msqid = msqid;
-    r_args.points = atoi(argv[2]) * 10000;
+    r_args.points = atoi(argv[1]) * 10000;
 
     w_args.filename = filename;
     w_args.points = r_args.points;

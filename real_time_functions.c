@@ -221,25 +221,26 @@ void * writer_thread(void * arg) {
         pthread_exit(NULL);
     }
 
-
+    umask(1);
     f1 = fopen(filename_1, "w");
     f2 = fopen(filename_2, "w");
-
-    fprintf(f1, "%d %d", msg.in_chan, msg.out_chan);
+    
 
     for (i = 0; i < args->points * args->s_points; i++) {
         if (i % args->s_points == 0) {
             msgrcv(args->msqid, (struct msgbuf *)&msg, sizeof(message) - sizeof(long), 1, 0);
 
+            if (i == 0) fprintf(f1, "%d %d\n", msg.in_chan, msg.out_chan);
+
             fprintf(f1, "%f %f %d %ld %f %f %f", msg.t_unix, msg.t_absol, msg.i, msg.lat, msg.v_model, msg.v_model_scaled, msg.c_model);
             fprintf(f2, "%f %d %f %f\n", msg.t_absol, msg.i, msg.g_real_to_virtual, msg.g_virtual_to_real);
 
             for (j = 0; j < msg.in_chan; ++j) {
-                fprintf(f1, "%f", msg.data_in[j]);
+                fprintf(f1, " %f", msg.data_in[j]);
             }
 
             for (j = 0; j < msg.out_chan; ++j) {
-                fprintf(f1, "%f", msg.data_out[j]);
+                fprintf(f1, " %f", msg.data_out[j]);
             }
 
             fprintf(f1, "\n");
@@ -289,11 +290,11 @@ void * rt_thread(void * arg) {
 
     comedi_t * d;
     Comedi_session session;
-    int in_channels [] = {0};
+    int in_channels [] = {0, 7};
     int out_channels [] = {0, 1};
-    int n_in_chan = 1;
+    int n_in_chan = 2;
     int n_out_chan = 2;
-    double ret_values [1];
+    double ret_values [2];
     double out_values [2];
     int calib_chan = 0;
 
@@ -360,6 +361,7 @@ void * rt_thread(void * arg) {
             ts_add_time(&ts_target, 0, PERIOD);
 
             if (read_comedi(session, n_in_chan, in_channels, ret_values) != 0) {
+            	printf("SFGDFH1\n");
                 close_device_comedi(d);
                 pthread_exit(NULL);
             }
@@ -405,6 +407,7 @@ void * rt_thread(void * arg) {
             ts_add_time(&ts_target, 0, PERIOD);
 
             if (read_comedi(session, n_in_chan, in_channels, ret_values) != 0) {
+            	printf("SFGDFH\n");
                 close_device_comedi(d);
                 pthread_exit(NULL);
             }
