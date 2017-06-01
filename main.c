@@ -47,7 +47,7 @@ int main (int argc, char * argv[]) {
 
 			rafaga_modelo_pts_iz = 59324.0;
 		    pts_por_s = 10000.0;
-		    t_rafaga_viva_s = 0.3;
+		    t_rafaga_viva_s = 0.8;
 		    rafaga_viva_pts = pts_por_s * t_rafaga_viva_s;
 
 

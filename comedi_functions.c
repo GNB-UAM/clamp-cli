@@ -23,17 +23,19 @@ int close_device_comedi (comedi_t * device) {
 }
 
 
-Comedi_session create_session_comedi (comedi_t * device, int in_chan, int out_chan, int aref, int unit) {
+Comedi_session create_session_comedi (comedi_t * device, int in_chan, int out_chan, int in_chan2, int out_chan2, int aref, int unit) {
 	Comedi_session d;
 
 	d.device = device;
 	d.in_chan = in_chan;
 	d.out_chan = out_chan;
+	d.in_chan2 = in_chan2;
+	d.out_chan2 = out_chan2;
 	d.range = 0; //get_range_comedi(device, subdev, chan, unit, min, max);
 	d.aref = aref;
 
 
-	d.in_subdev = comedi_find_subdevice_by_type(device, COMEDI_SUBD_AI, in_chan);
+	d.in_subdev = comedi_find_subdevice_by_type(device, COMEDI_SUBD_AI, 0);
 	if (d.in_subdev == -1) {
 		if (comedi_close(device) == -1) {
 			comedi_perror("Error with comedi_close");
@@ -41,7 +43,7 @@ Comedi_session create_session_comedi (comedi_t * device, int in_chan, int out_ch
 		comedi_perror("Error finding input subdevice");
 	}
 
-	d.out_subdev = comedi_find_subdevice_by_type(device, COMEDI_SUBD_AO, out_chan);
+	d.out_subdev = comedi_find_subdevice_by_type(device, COMEDI_SUBD_AO, 0);
 	if (d.out_subdev == -1) {
 		if (comedi_close(device) == -1) {
 			comedi_perror("Error with comedi_close");
@@ -127,6 +129,30 @@ double read_single_data_comedi (Comedi_session session, comedi_range * range_inf
 	return 0;
 }
 
+double read_single_data_comedi2 (Comedi_session session, comedi_range * range_info, lsampl_t maxdata) {
+	lsampl_t data;
+	double physical_value;
+	int retval;
+
+	retval = comedi_data_read(session.device, session.in_subdev,session.in_chan2, session.range, session.aref, &data);
+	if(retval < 0)
+	{
+		comedi_perror("read");
+		return 0;
+	}
+
+	comedi_set_global_oor_behavior(COMEDI_OOR_NAN);
+	physical_value = comedi_to_phys(data, range_info, maxdata);
+	
+	if(isnan(physical_value)) {
+		return 0;
+	} else {
+		return physical_value;
+	}
+
+	return 0;
+}
+
 
 int write_single_data_comedi (Comedi_session session, comedi_range * range_info, lsampl_t maxdata, double data) {
 	lsampl_t comedi_value;
@@ -137,4 +163,15 @@ int write_single_data_comedi (Comedi_session session, comedi_range * range_info,
 	}
 
 	return comedi_data_write(session.device, session.out_subdev, session.out_chan, session.range, session.aref, comedi_value);
+}
+
+int write_single_data_comedi2 (Comedi_session session, comedi_range * range_info, lsampl_t maxdata, double data) {
+	lsampl_t comedi_value;
+
+	comedi_value = comedi_from_phys(data, range_info, maxdata);
+	if (comedi_value < 0 || comedi_value > maxdata) {
+		return -1;
+	}
+
+	return comedi_data_write(session.device, session.out_subdev, session.out_chan2, session.range, session.aref, comedi_value);
 }

@@ -95,15 +95,18 @@ int ini_recibido (double *min, double *minABS, double *max, Comedi_session sessi
 
 
     for (i=0; i<10000*(segs_observo); i++){
+
         clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts_target, NULL);
         valor_recibido = read_single_data_comedi(session_v, range_info_in_v, maxdata_in_v);
-        
+
+        //if (valor_recibido = 999) return -1;
+
         if(valor_recibido>maxi){
             maxi=valor_recibido;
         }else if(valor_recibido<mini){
             mini=valor_recibido;
         }
-        
+
         if(i>2){
             resta=valor_recibido-valor_old;
             
@@ -117,6 +120,8 @@ int ini_recibido (double *min, double *minABS, double *max, Comedi_session sessi
             valor_old=valor_recibido;
 
         ts_add_time(&ts_target, 0, PERIOD); 
+        
+
     }
 
 
@@ -191,7 +196,7 @@ void * writer_thread(void * arg) {
         if (i % args->s_points == 0) {
             msgrcv(args->msqid, (struct msgbuf *)&msg, sizeof(message) - sizeof(long), 1, 0);
 
-            fprintf(f, "%f %f %f %ld\n", msg.absol, msg.data, msg.nerea, msg.lat);
+            fprintf(f, "%f %f %f %f %f %f %ld\n", msg.t_unix, msg.absol, msg.data, msg.nerea, msg.viva, msg.corriente_viva, msg.corriente_model, msg.lat);
         }
     }
     
@@ -216,9 +221,9 @@ void * rt_thread(void * arg) {
     double offset_virtual_a_viva;
     double offset_viva_a_virtual;
 
-    double g_virtual_a_viva=0.3;
-    double g_viva_a_virtual=0.3;
-    double corriente, valor_recibido = 0;
+    double g_virtual_a_viva=0.4;
+    double g_viva_a_virtual=0.4;
+    double corriente, valor_recibido = 0, valor_recibido2 = 0;
 
     double rafaga_modelo_pts_hr = 260166.0;
     double pts_por_s = 10000.0;
@@ -233,36 +238,62 @@ void * rt_thread(void * arg) {
     syn = 0;
 
 
-    comedi_t * d;
-    Comedi_session session_v;
-    comedi_range * range_info_in_v;
-    lsampl_t maxdata_in_v;
-    comedi_range * range_info_out_v;
-    lsampl_t maxdata_out_v;
+    comedi_t * d1;
+    Comedi_session session_v1;
+    comedi_range * range_info_in_v1;
+    lsampl_t maxdata_in_v1;
+    comedi_range * range_info_out_v1;
+    lsampl_t maxdata_out_v1;
 
-    Comedi_session session_a;
-    comedi_range * range_info_in_a;
-    lsampl_t maxdata_in_a;
-    comedi_range * range_info_out_a;
-    lsampl_t maxdata_out_a;
+    Comedi_session session_a1;
+    comedi_range * range_info_in_a1;
+    lsampl_t maxdata_in_a1;
+    comedi_range * range_info_out_a1;
+    lsampl_t maxdata_out_a1;
+
+    comedi_t * d2;
+    Comedi_session session_v2;
+    comedi_range * range_info_in_v2;
+    lsampl_t maxdata_in_v2;
+    comedi_range * range_info_out_v2;
+    lsampl_t maxdata_out_v2;
+
+    Comedi_session session_a2;
+    comedi_range * range_info_in_a2;
+    lsampl_t maxdata_in_a2;
+    comedi_range * range_info_out_a2;
+    lsampl_t maxdata_out_a2;
 
 
 
-    d = open_device_comedi("/dev/comedi0");
+    d1 = open_device_comedi("/dev/comedi0");
+    d2 = open_device_comedi("/dev/comedi0");
 
     /*Envia el voltage para ver que hace el modelo*/
-    session_v = create_session_comedi(d, 0, 1, AREF_GROUND, UNIT_volt);
-    range_info_in_v = get_range_info_comedi(session_v, COMEDI_INPUT);
-    maxdata_in_v = get_maxdata_comedi(session_v, COMEDI_INPUT);
-    range_info_out_v = get_range_info_comedi(session_v, COMEDI_OUTPUT);
-    maxdata_out_v = get_maxdata_comedi(session_v, COMEDI_OUTPUT);
 
-    session_a = create_session_comedi(d, 0, 0, AREF_GROUND, UNIT_mA);
-    range_info_in_a = get_range_info_comedi(session_a, COMEDI_INPUT);
-    maxdata_in_a = get_maxdata_comedi(session_a, COMEDI_INPUT);
-    range_info_out_a = get_range_info_comedi(session_a, COMEDI_OUTPUT);
-    maxdata_out_a = get_maxdata_comedi(session_a, COMEDI_OUTPUT);
+    printf("subdev1 = %d\n", comedi_find_subdevice_by_type(d1, COMEDI_SUBD_AI, 0));
 
+    session_a1 = create_session_comedi(d1, 0, 0, 2, 1, AREF_GROUND, UNIT_mA);
+    range_info_in_a1 = get_range_info_comedi(session_a1, COMEDI_INPUT);
+    maxdata_in_a1 = get_maxdata_comedi(session_a1, COMEDI_INPUT);
+    range_info_out_a1 = get_range_info_comedi(session_a1, COMEDI_OUTPUT);
+    maxdata_out_a1 = get_maxdata_comedi(session_a1, COMEDI_OUTPUT);
+
+
+    //d2 = open_device_comedi("/dev/comedi0");
+
+    /*Envia el voltage para ver que hace el modelo*/
+
+    //printf("subdev2 = %d\n", comedi_find_subdevice_by_type(d1, COMEDI_SUBD_AI, 0));
+
+
+/*
+    session_a2 = create_session_comedi(d2, 1, 1, AREF_GROUND, UNIT_mA);
+    range_info_in_a2 = get_range_info_comedi(session_a2, COMEDI_INPUT);
+    maxdata_in_a2 = get_maxdata_comedi(session_a2, COMEDI_INPUT);
+    range_info_out_a2 = get_range_info_comedi(session_a2, COMEDI_OUTPUT);
+    maxdata_out_a2 = get_maxdata_comedi(session_a2, COMEDI_OUTPUT);
+*/
 
 
     prepare_real_time(id);
@@ -270,8 +301,13 @@ void * rt_thread(void * arg) {
 
 
     ini_iz(args->vars, &minHR, &minHRabs, &maxHR);
-    if ( ini_recibido (&minV, &minVabs, &maxV, session_v, range_info_in_v, maxdata_in_v) == -1 ) return NULL;
+        printf("subdev1 = %d\n", comedi_find_subdevice_by_type(d1, COMEDI_SUBD_AI, 0));
+
+    if ( ini_recibido (&minV, &minVabs, &maxV, session_a1, range_info_in_a1, maxdata_in_a1) == -1 ) return NULL;
+        printf("subdev1 = %d\n", comedi_find_subdevice_by_type(d1, COMEDI_SUBD_AI, 0));
+
     calcula_escala (minHRabs, maxHR, minVabs, maxV, &escala_virtual_a_viva, &escala_viva_a_virtual, &offset_virtual_a_viva, &offset_viva_a_virtual);
+    printf("subdev1 = %d\n", comedi_find_subdevice_by_type(d1, COMEDI_SUBD_AI, 0));
 
 
     clock_gettime(CLOCK_MONOTONIC, &ts_target);
@@ -288,30 +324,42 @@ void * rt_thread(void * arg) {
             msg.id = 1;
             msg.data = args->vars[0] *escala_virtual_a_viva + offset_virtual_a_viva;
             msg.lat = ts_result.tv_sec * NSEC_PER_SEC + ts_result.tv_nsec;
-            msg.nerea = valor_recibido;
+            msg.nerea = valor_recibido2;
+            msg.viva = valor_recibido;
+            msg.t_unix = (ts_iter.tv_sec * NSEC_PER_SEC + ts_iter.tv_nsec) * 0.000001;
+            msg.corriente_viva = syn;
 
             ts_substraction(&ts_start, &ts_iter, &ts_result);
             msg.absol = (ts_result.tv_sec * NSEC_PER_SEC + ts_result.tv_nsec) * 0.000001;
 
             corriente=g_virtual_a_viva * ( args->vars[0] *escala_virtual_a_viva + offset_virtual_a_viva - valor_recibido);
+            msg.corriente_model = corriente;
 
-            write_single_data_comedi(session_v, range_info_out_v, maxdata_out_v, args->vars[0] *escala_virtual_a_viva + offset_virtual_a_viva);
+            write_single_data_comedi(session_a1, range_info_out_a1, maxdata_out_a1, (valor_recibido2 *escala_virtual_a_viva + offset_virtual_a_viva - valor_recibido));
 
-            write_single_data_comedi(session_a, range_info_out_a, maxdata_out_a, corriente);
+            
+            write_single_data_comedi2(session_a1, range_info_out_a1, maxdata_out_a1, (valor_recibido *escala_viva_a_virtual + offset_viva_a_virtual - valor_recibido2));
 
             msgsnd(args->msqid, (struct msgbuf *) &msg, sizeof(message) - sizeof(long), IPC_NOWAIT);
 
             ts_add_time(&ts_target, 0, PERIOD);
 
-            valor_recibido = read_single_data_comedi(session_v, range_info_in_v, maxdata_out_v);
+            valor_recibido = read_single_data_comedi(session_a1, range_info_in_a1, maxdata_out_a1);
+            valor_recibido2 = read_single_data_comedi2(session_a1, range_info_in_a1, maxdata_out_a1);
         }
 
         
         syn = -( g_viva_a_virtual * ( valor_recibido*escala_viva_a_virtual + offset_viva_a_virtual - args->vars[0] ) );
 
-        args->func(args->dim, args->dt, args->vars, args->params, syn);
+        //args->func(args->dim, args->dt, args->vars, args->params, syn);
+        //args->vars[0] = read_single_data_comedi(session_a2, range_info_in_a2, maxdata_out_a2);
+        //write_single_data_comedi(session_a2, range_info_out_a2, maxdata_out_a2, syn);
     }
 
-    close_device_comedi(d);
+
+    write_single_data_comedi(session_a1, range_info_out_a1, maxdata_out_a1, 0);
+    write_single_data_comedi2(session_a1, range_info_out_a1, maxdata_out_a1, 0);
+    close_device_comedi(d1);
+    //close_device_comedi(d2);
     pthread_exit(NULL);
 }

@@ -37,10 +37,10 @@ awake = array[:,6]
 sleep = array[:,7]
 '''
 
-absol = array[:,0]
-v = array[:,1]
-n = array[:,2]
-lat = array[:,3]
+absol = array[:,1]
+v = array[:,2]
+n = array[:,3]
+lat = array[:,4]
 
 
 def plot_voltage(n_points):

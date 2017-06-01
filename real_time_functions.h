@@ -24,7 +24,11 @@ typedef struct {
     double data;
     long lat;
     double absol;
+    double t_unix;
     double nerea;
+    double corriente_viva;
+    double corriente_model;
+    double viva;
 } message;
 
 
