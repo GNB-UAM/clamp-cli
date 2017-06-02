@@ -47,6 +47,7 @@ typedef struct {
 
 typedef struct {
     void (*func)(int, double, double*, double*, double);
+    void (*ini)(double*, double*, double*, double*);
     double * vars;
     double * params;
     int dim;

@@ -4,6 +4,7 @@
 *.txt
 !about.txt
 figures/*.png
+main
 
 # Prerequisites
 *.d

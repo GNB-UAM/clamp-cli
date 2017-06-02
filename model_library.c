@@ -95,6 +95,15 @@ void izhikevich (int dim, double dt, double * vars, double * params, double syn)
 	return;
 }
 
+void ini_iz (double * vars, double *min, double *minABS, double *max){
+    vars[0]=30.240263;
+    vars[1]=-5.544592;
+    *min=-50.000000;
+    *minABS=-74.235106;
+    *max=30.240470;
+    return;
+}
+
 
 /* HINDMARSH-ROSE */
 
@@ -110,4 +119,15 @@ void hindmarsh_rose (int dim, double dt, double * vars, double * params, double 
 	runge_kutta_6 (hr_f, dim, dt, vars, params, syn);
 
 	return;
+}
+
+void ini_hr (double * vars, double *min, double *minABS, double *max){
+    vars[0]=-0.712841;
+    vars[1]=-1.936878;
+    vars[2]=3.165682;
+    *min=-1.608734;
+    *minABS=-1.608734;
+    *max=1.797032;
+    //rafaga_hr=260166;
+    return;
 }

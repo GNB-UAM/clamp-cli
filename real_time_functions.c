@@ -162,28 +162,6 @@ void calcula_escala (double min_virtual, double max_virtual, double min_viva, do
 }
 
 
-void ini_hr (double * vars, double *min, double *minABS, double *max){
-    vars[0]=-0.712841;
-    vars[1]=-1.936878;
-    vars[2]=3.165682;
-    *min=-1.608734;
-    *minABS=-1.608734;
-    *max=1.797032;
-    //rafaga_hr=260166;
-    return;
-}
-
-void ini_iz (double * vars, double *min, double *minABS, double *max){
-    vars[0]=30.240263;
-    vars[1]=-5.544592;
-    *min=-50.000000;
-    *minABS=-74.235106;
-    *max=30.240470;
-    return;
-}
-
-
-
 
 /* THREADS FUNCTIONS */
 
@@ -208,8 +186,8 @@ void * writer_thread(void * arg) {
     args = arg;
     id = pthread_self();
 
-    char filename_1 [strlen(args->filename) + 3];
-    char filename_2 [strlen(args->filename) + 3];
+    char filename_1 [strlen(args->filename) + 6];
+    char filename_2 [strlen(args->filename) + 6];
 
     if (sprintf(filename_1, "%s_1.txt", args->filename) < 0) {
         printf("Error creating file 1 name\n;");
@@ -220,6 +198,7 @@ void * writer_thread(void * arg) {
         printf("Error creating file 2 name\n;");
         pthread_exit(NULL);
     }
+
 
     umask(1);
     f1 = fopen(filename_1, "w");
@@ -232,7 +211,7 @@ void * writer_thread(void * arg) {
 
             if (i == 0) fprintf(f1, "%d %d\n", msg.in_chan, msg.out_chan);
 
-            fprintf(f1, "%f %f %d %ld %f %f %f", msg.t_unix, msg.t_absol, msg.i, msg.lat, msg.v_model, msg.v_model_scaled, msg.c_model);
+            fprintf(f1, "%f %f %d %ld %f %f %f %f", msg.t_unix, msg.t_absol, msg.i, msg.lat, msg.v_model, msg.v_model_scaled, msg.c_model, msg.c_real);
             fprintf(f2, "%f %d %f %f\n", msg.t_absol, msg.i, msg.g_real_to_virtual, msg.g_virtual_to_real);
 
             for (j = 0; j < msg.in_chan; ++j) {
@@ -286,11 +265,12 @@ void * rt_thread(void * arg) {
     id = pthread_self();
     args = arg;
     syn = 0;
+    msg.c_real = 0;
 
 
     comedi_t * d;
     Comedi_session session;
-    int in_channels [] = {0, 7};
+    int in_channels [] = {0, 1};
     int out_channels [] = {0, 1};
     int n_in_chan = 2;
     int n_out_chan = 2;
@@ -317,7 +297,7 @@ void * rt_thread(void * arg) {
 
 
 
-    ini_iz(args->vars, &minHR, &minHRabs, &maxHR);
+    args->ini(args->vars, &minHR, &minHRabs, &maxHR);
     if ( ini_recibido (&minV, &minVabs, &maxV, session, calib_chan) == -1 ) return NULL;
     calcula_escala (minHRabs, maxHR, minVabs, maxV, &escala_virtual_a_viva, &escala_viva_a_virtual, &offset_virtual_a_viva, &offset_viva_a_virtual);
 

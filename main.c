@@ -75,6 +75,7 @@ int main (int argc, char * argv[]) {
 			r_args.dt = 0.001;
 
 			r_args.func = &izhikevich;
+			r_args.ini = &ini_iz;
 
 			break;
 		case HR:
@@ -102,6 +103,7 @@ int main (int argc, char * argv[]) {
 			r_args.dt = 0.003;
 
 			r_args.func = &hindmarsh_rose;
+			r_args.ini = &ini_hr;
 
 			break;
 		default:

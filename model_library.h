@@ -30,9 +30,12 @@ void izh_f (double * vars, double * ret, double * params, double syn);
 
 void izhikevich (int dim, double dt, double * vars, double * params, double syn);
 
+void ini_iz (double * vars, double *min, double *minABS, double *max);
 
 
 /* HINDMARSH-ROSE */
 void hr_f (double * vars, double * ret, double * params, double syn);
 
 void hindmarsh_rose (int dim, double dt, double * vars, double * params, double syn);
+
+void ini_hr (double * vars, double *min, double *minABS, double *max);
