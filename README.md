@@ -1,6 +1,8 @@
 # clamp-cli
 Command line program to make neuron hybrid circuits
 
+![alt tag](https://raw.githubusercontent.com/manurs/clamp-cli/master/img.png)
+
 ## Dependencies
 - Linux RT kernel (RT PREEMPT)
   - RT PREEMPT is the main version with more features and tests (*) 
