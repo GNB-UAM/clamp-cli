@@ -1,7 +1,7 @@
 # Nuestro
 *.dat
 *.pdf
-*.png
+figures/*.png
 
 # Prerequisites
 *.d
