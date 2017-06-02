@@ -1,6 +1,8 @@
 # Nuestro
 *.dat
 *.pdf
+*.txt
+!about.txt
 figures/*.png
 
 # Prerequisites
