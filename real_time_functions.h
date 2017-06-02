@@ -32,6 +32,7 @@ typedef struct {
     double v_model;
     double v_model_scaled;
     double c_model;
+    double c_real;
     int in_chan;
     int out_chan;
     double * data_in;

@@ -27,9 +27,9 @@ int main (int argc, char * argv[]) {
 
 	time_t t;
 	struct tm tm;
-	char path [15];
+	char path [18];
 	char hour [12];
-	char filename [19];
+	char filename [22];
 
 
 	writer_args w_args;
@@ -124,7 +124,7 @@ int main (int argc, char * argv[]) {
 
     t = time(NULL);
 	tm = *localtime(&t);
-	sprintf(path, "data/%d_%d_%d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+	sprintf(path, "data/%dy_%dm_%dd", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
 
 	filename[0] = '\0';
 	strcat(filename, path);

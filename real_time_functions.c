@@ -366,7 +366,7 @@ void * rt_thread(void * arg) {
                 pthread_exit(NULL);
             }
         }
-
+        msg.c_real = 0;
         args->func(args->dim, args->dt, args->vars, args->params, syn);
     }
 
@@ -415,6 +415,7 @@ void * rt_thread(void * arg) {
 
         
         syn = -( g_real_to_virtual * ( ret_values[0] * escala_viva_a_virtual + offset_viva_a_virtual - args->vars[0] ) );
+        msg.c_real = syn;
 
         args->func(args->dim, args->dt, args->vars, args->params, syn);
     }
