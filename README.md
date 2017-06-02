@@ -7,6 +7,7 @@ Rodrigo Amaducci
 Manuel Reyes-Sanchez (manuel.reyes@uam.es - [scholar](https://scholar.google.es/citations?user=JlKzj1cAAAAJ))
 
 Grupo de Neurocomputación Biológica [(GNB)](http://arantxa.ii.uam.es/~gnb/) - Escuela Politécnica Superior [(EPS)](http://www.uam.es/ss/Satellite/EscuelaPolitecnica/es/home.htm)
+
 Universidad Autónoma de Madrid [(UAM)](http://www.uam.es)
 
 ![alt tag](https://raw.githubusercontent.com/manurs/clamp-cli/master/img.png)
