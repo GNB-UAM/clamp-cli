@@ -14,11 +14,16 @@ ap.add_argument("-t", "--title", required=True,
 	help="title")
 args = vars(ap.parse_args())
 
+dataset = pd.read_csv(args["file"], delimiter=' ', header=0)
+array = dataset.values
+data = array[1:,:]
+n_in_chan = data[0,0]
+n_out_chan = data[0,1]
+print(n_in_chan)
+print(n_out_chan)
+
 dataset = pd.read_csv(args["file"], delimiter=' ', header=1)
 array = dataset.values
-
-n_in_chan = 2
-n_out_chan = 2
 data = array[1:,:]
 
 t_unix = data[:, 0]
