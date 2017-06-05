@@ -73,11 +73,11 @@ void prepare_real_time (pthread_t id) {
 
 /* CALIBRATION FUNCTIONS (MANU) */
 
-int ini_recibido (double *min, double *minABS, double *max, Comedi_session session, int chan){
+int ini_recibido (double *min, double *min_abs, double *max, Comedi_session session, int chan){
     
     /*Vamos a escanear 10000 puntos durante x segundos para determinar min y max*/
     int i=0;
-    double valor_recibido=0.0, valor_old=0.0, resta=0.0, pendiente_max=-999999;
+    double retval=0.0, valor_old=0.0, resta=0.0, pendiente_max=-999999;
     struct timespec ts_target, ts_iter, ts_result, ts_start;
     //double bajada_mayor=-999999;
     //double subida_mayor=-999999;
@@ -106,16 +106,16 @@ int ini_recibido (double *min, double *minABS, double *max, Comedi_session sessi
             return -1;
         }
 
-        valor_recibido = ret_values[0];
+        retval = ret_values[0];
         
-        if(valor_recibido>maxi){
-            maxi=valor_recibido;
-        }else if(valor_recibido<mini){
-            mini=valor_recibido;
+        if(retval>maxi){
+            maxi=retval;
+        }else if(retval<mini){
+            mini=retval;
         }
         
         if(i>2){
-            resta=valor_recibido-valor_old;
+            resta=retval-valor_old;
             
             if(resta>pendiente_max){
                 pendiente_max=resta;
@@ -124,7 +124,7 @@ int ini_recibido (double *min, double *minABS, double *max, Comedi_session sessi
         }
         
         if(i%10==0)
-            valor_old=valor_recibido;
+            valor_old=retval;
 
         ts_add_time(&ts_target, 0, PERIOD); 
     }
@@ -135,14 +135,14 @@ int ini_recibido (double *min, double *minABS, double *max, Comedi_session sessi
     printf("// min_leido=%f ", mini);
     printf("// min_leido_rel=%f\n\n", mini*0.55);*/
 
-    *minABS = mini;
+    *min_abs = mini;
     *min = mini*0.55;
     *max = maxi;
     return 1;
 }
 
 
-void calcula_escala (double min_virtual, double max_virtual, double min_viva, double max_viva, double *escala_virtual_a_viva, double *escala_viva_a_virtual, double *offset_virtual_a_viva, double *offset_viva_a_virtual){
+void calcula_escala (double min_virtual, double max_virtual, double min_viva, double max_viva, double *scale_virtual_to_real, double *scale_real_to_virtual, double *offset_virtual_to_real, double *offset_real_to_virtual){
     
     double rg_virtual, rg_viva;
     
@@ -151,11 +151,11 @@ void calcula_escala (double min_virtual, double max_virtual, double min_viva, do
     
     //printf("rg_virtual=%f, rg_viva=%f\n", rg_virtual, rg_viva);
     
-    *escala_virtual_a_viva = rg_viva / rg_virtual;
-    *escala_viva_a_virtual = rg_virtual / rg_viva;
+    *scale_virtual_to_real = rg_viva / rg_virtual;
+    *scale_real_to_virtual = rg_virtual / rg_viva;
     
-    *offset_virtual_a_viva = min_viva - (min_virtual*(*escala_virtual_a_viva));
-    *offset_viva_a_virtual = min_virtual - (min_viva*(*escala_viva_a_virtual));
+    *offset_virtual_to_real = min_viva - (min_virtual*(*scale_virtual_to_real));
+    *offset_real_to_virtual = min_virtual - (min_viva*(*scale_real_to_virtual));
 
     //printf("ESCALAS CALCULADAS\n\n");
     return;
@@ -243,16 +243,16 @@ void * rt_thread(void * arg) {
     pthread_t id;
     double syn;
 
-    double maxHR, minHR, minHRabs;
-    double maxV, minV, minVabs;
-    double escala_viva_a_virtual;
-    double escala_virtual_a_viva;
-    double offset_virtual_a_viva;
-    double offset_viva_a_virtual;
+    double max, min, min_abs;
+    double maxV, minV, minV_abs;
+    double scale_real_to_virtual;
+    double scale_virtual_to_real;
+    double offset_virtual_to_real;
+    double offset_real_to_virtual;
 
     double g_virtual_to_real=0.3;
     double g_real_to_virtual=0.3;
-    double corriente, valor_recibido = 0;
+    double c_model, retval = 0;
 
     double rafaga_modelo_pts_hr = 260166.0;
     double pts_por_s = 10000.0;
@@ -297,9 +297,9 @@ void * rt_thread(void * arg) {
 
 
 
-    args->ini(args->vars, &minHR, &minHRabs, &maxHR);
-    if ( ini_recibido (&minV, &minVabs, &maxV, session, calib_chan) == -1 ) return NULL;
-    calcula_escala (minHRabs, maxHR, minVabs, maxV, &escala_virtual_a_viva, &escala_viva_a_virtual, &offset_virtual_a_viva, &offset_viva_a_virtual);
+    args->ini(args->vars, &min, &min_abs, &max);
+    if ( ini_recibido (&minV, &minV_abs, &maxV, session, calib_chan) == -1 ) return NULL;
+    calcula_escala (min_abs, max, minV_abs, maxV, &scale_virtual_to_real, &scale_real_to_virtual, &offset_virtual_to_real, &offset_real_to_virtual);
 
 
     clock_gettime(CLOCK_MONOTONIC, &ts_target);
@@ -315,7 +315,7 @@ void * rt_thread(void * arg) {
             ts_substraction(&ts_target, &ts_iter, &ts_result);
             msg.id = 1;
             msg.i = i;
-            msg.v_model_scaled = args->vars[0] * escala_virtual_a_viva + offset_virtual_a_viva;
+            msg.v_model_scaled = args->vars[0] * scale_virtual_to_real + offset_virtual_to_real;
             msg.v_model = args->vars[0];
             msg.c_model = 0;
             msg.lat = ts_result.tv_sec * NSEC_PER_SEC + ts_result.tv_nsec;
@@ -341,7 +341,6 @@ void * rt_thread(void * arg) {
             ts_add_time(&ts_target, 0, PERIOD);
 
             if (read_comedi(session, n_in_chan, in_channels, ret_values) != 0) {
-            	printf("SFGDFH1\n");
                 close_device_comedi(d);
                 pthread_exit(NULL);
             }
@@ -359,16 +358,19 @@ void * rt_thread(void * arg) {
             ts_substraction(&ts_target, &ts_iter, &ts_result);
             msg.id = 1;
             msg.i = i;
-            msg.v_model_scaled = args->vars[0] * escala_virtual_a_viva + offset_virtual_a_viva;
+            msg.v_model_scaled = args->vars[0] * scale_virtual_to_real + offset_virtual_to_real;
             msg.v_model = args->vars[0];
-            msg.c_model = g_virtual_to_real * ( args->vars[0] * escala_virtual_a_viva + offset_virtual_a_viva - ret_values[0]);
             msg.lat = ts_result.tv_sec * NSEC_PER_SEC + ts_result.tv_nsec;
+
+            args->syn(args->vars[0] * scale_virtual_to_real + offset_virtual_to_real, ret_values[0], &g_virtual_to_real, &c_model);
+            msg.c_model = c_model;
+
 
             ts_substraction(&ts_start, &ts_iter, &ts_result);
             msg.t_absol = (ts_result.tv_sec * NSEC_PER_SEC + ts_result.tv_nsec) * 0.000001;
             msg.t_unix = (ts_iter.tv_sec * NSEC_PER_SEC + ts_iter.tv_nsec) * 0.000001;
 
-            out_values[0] = msg.c_model;
+            out_values[0] = c_model;
             out_values[1] = msg.v_model_scaled;
 
             msg.g_real_to_virtual = g_real_to_virtual;
@@ -387,17 +389,16 @@ void * rt_thread(void * arg) {
             ts_add_time(&ts_target, 0, PERIOD);
 
             if (read_comedi(session, n_in_chan, in_channels, ret_values) != 0) {
-            	printf("SFGDFH\n");
                 close_device_comedi(d);
                 pthread_exit(NULL);
             }
         }
 
-        
-        syn = -( g_real_to_virtual * ( ret_values[0] * escala_viva_a_virtual + offset_viva_a_virtual - args->vars[0] ) );
-        msg.c_real = syn;
+         
+        args->syn(ret_values[0] * scale_real_to_virtual + offset_real_to_virtual, args->vars[0], &g_real_to_virtual, &syn);
+        msg.c_real = -syn;
 
-        args->func(args->dim, args->dt, args->vars, args->params, syn);
+        args->func(args->dim, args->dt, args->vars, args->params, -syn);
     }
 
     close_device_comedi(d);

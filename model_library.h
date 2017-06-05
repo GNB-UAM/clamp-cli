@@ -4,6 +4,10 @@
 
 /* MACROS */
 
+#define IZHIKEVICH 0
+#define HR 1
+#define ELECTRIC 0
+
 /*Izhikevich*/
 #define I_IZ 0
 #define A_IZ 1
@@ -23,7 +27,7 @@
 void runge_kutta_6 (void (*f) (double *, double *, double *, double), int dim, double dt, double * vars, double * params, double syn);
 
 /* SYNAPSES */
-double elec_syn (double v1, double v2, double g);
+void elec_syn (double v1, double v2, double * g, double * ret);
 
 /* IZHIKEVICH */
 void izh_f (double * vars, double * ret, double * params, double syn);

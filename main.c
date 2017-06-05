@@ -15,8 +15,6 @@ plt.plot(v)
 plt.show()
 */
 
-#define IZHIKEVICH 0
-#define HR 1
 
 int main (int argc, char * argv[]) {
 	key_t key_q;
@@ -46,6 +44,8 @@ int main (int argc, char * argv[]) {
 
 
 	int model = atoi(argv[2]);
+	int synapse = atoi(argv[3]);
+
 
 	switch (model){
 		case IZHIKEVICH:
@@ -104,6 +104,16 @@ int main (int argc, char * argv[]) {
 
 			r_args.func = &hindmarsh_rose;
 			r_args.ini = &ini_hr;
+
+			break;
+		default:
+			return -1;
+	}
+
+
+	switch (synapse) {
+		case ELECTRIC:
+			r_args.syn = &elec_syn;
 
 			break;
 		default:

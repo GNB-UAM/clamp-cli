@@ -69,8 +69,9 @@ void runge_kutta_6 (void (*f) (double *, double *, double *, double), int dim, d
 
 /* SYNAPSES */
 
-double elec_syn (double v1, double v2, double g) {
-    return g * (v1 - v2);
+void elec_syn (double v1, double v2, double * g, double * ret) {
+    *ret = (*g) * (v1 - v2);
+    return;
 }
 
 
