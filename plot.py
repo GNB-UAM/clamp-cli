@@ -14,13 +14,15 @@ ap.add_argument("-t", "--title", required=True,
 	help="title")
 args = vars(ap.parse_args())
 
-dataset = pd.read_csv(args["file"], delimiter=' ', header=0)
-array = dataset.values
-data = array[1:,:]
-n_in_chan = data[0,0]
-n_out_chan = data[0,1]
+file = open(args["file"],'r')
+line = file.readline()
+channels = line.split(' ')
+
+n_in_chan = int(channels[0])
+n_out_chan = int(channels[1]) 
 print(n_in_chan)
 print(n_out_chan)
+file.close()
 
 dataset = pd.read_csv(args["file"], delimiter=' ', header=1)
 array = dataset.values
