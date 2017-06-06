@@ -179,7 +179,7 @@ void copy_1d_array (double * src, double * dst, int n_elems) {
 void * writer_thread(void * arg) {
     message msg;
     pthread_t id;
-    FILE * f1, * f2;
+    FILE * f1, * f2, *f3;
     writer_args * args;
     int i, j;
 
@@ -188,6 +188,7 @@ void * writer_thread(void * arg) {
 
     char filename_1 [strlen(args->filename) + 6];
     char filename_2 [strlen(args->filename) + 6];
+    char filename_3 [strlen(args->filename) + 12];
 
     if (sprintf(filename_1, "%s_1.txt", args->filename) < 0) {
         printf("Error creating file 1 name\n;");
@@ -199,10 +200,20 @@ void * writer_thread(void * arg) {
         pthread_exit(NULL);
     }
 
+    if (sprintf(filename_3, "%s_summary.txt", args->filename) < 0) {
+        printf("Error creating file summary name\n;");
+        pthread_exit(NULL);
+    }
+
 
     umask(1);
     f1 = fopen(filename_1, "w");
     f2 = fopen(filename_2, "w");
+    f3 = fopen(filename_3, "w");
+
+
+    fprintf(f3, "Model: %d\nSynapse: %d\nPeriod: %d ns", args->model, args->type_syn, PERIOD);
+    fclose(f3);
     
 
     for (i = 0; i < args->points * args->s_points; i++) {
@@ -212,7 +223,7 @@ void * writer_thread(void * arg) {
             if (i == 0) fprintf(f1, "%d %d\n", msg.in_chan, msg.out_chan);
 
             fprintf(f1, "%f %f %d %ld %f %f %f %f", msg.t_unix, msg.t_absol, msg.i, msg.lat, msg.v_model, msg.v_model_scaled, msg.c_model, msg.c_real);
-            fprintf(f2, "%f %d %f %f\n", msg.t_absol, msg.i, msg.g_real_to_virtual, msg.g_virtual_to_real);
+            fprintf(f2, "%f %d", msg.t_absol, msg.i);
 
             for (j = 0; j < msg.in_chan; ++j) {
                 fprintf(f1, " %f", msg.data_in[j]);

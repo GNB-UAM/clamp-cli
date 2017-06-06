@@ -22,6 +22,7 @@ int main (int argc, char * argv[]) {
 	pthread_t writer, rt;
 	int err;
 	int msqid;
+	FILE * f;
 
 	time_t t;
 	struct tm tm;
@@ -114,12 +115,10 @@ int main (int argc, char * argv[]) {
 	switch (synapse) {
 		case ELECTRIC:
 			r_args.syn = &elec_syn;
-			r_args.type_syn = synapse;
 
 			break;
 		case CHEMICAL:
 			r_args.syn = &chem_syn;
-			r_args.type_syn = synapse;
 
 			break;
 		default:
@@ -156,14 +155,18 @@ int main (int argc, char * argv[]) {
 
 	sprintf(hour, "/%dh_%dm_%ds", tm.tm_hour, tm.tm_min, tm.tm_sec);
 	strcat(filename, hour);
+        
 
     r_args.msqid = msqid;
     r_args.points = atoi(argv[1]) * 10000;
+    r_args.type_syn = synapse;
 
     w_args.filename = filename;
     w_args.points = r_args.points;
     w_args.s_points = r_args.s_points;
     w_args.msqid = msqid;
+    w_args.type_syn = synapse;
+    w_args.model = model;
 
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);

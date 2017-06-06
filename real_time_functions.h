@@ -67,6 +67,8 @@ typedef struct {
     int msqid;
     long points;
     int s_points;
+    int type_syn;
+    int model;
 } writer_args;
 
 void ts_substraction (struct timespec * start, struct timespec * stop, struct timespec * result);
