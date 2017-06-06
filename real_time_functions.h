@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include "comedi_functions.h"
+#include "model_library.h"
 
 
 #define MAX_SAFE_STACK (8*1024)
@@ -39,8 +40,9 @@ typedef struct {
     double * data_out;
 
     /* Fichero 2*/
-    double g_real_to_virtual;
-    double g_virtual_to_real;
+    double * g_real_to_virtual;
+    double * g_virtual_to_real;
+    int n_g;
     double ecm; 
 } message;
 
@@ -48,11 +50,12 @@ typedef struct {
 typedef struct {
     void (*func)(int, double, double*, double*, double);
     void (*ini)(double*, double*, double*, double*);
-    void (*syn)(double, double, double*, double*);
+    void (*syn)(double, double, double*, double*, double*);
     double * vars;
     double * params;
     int dim;
     double dt;
+    int type_syn;
     long points;
     int s_points;
     int msqid;

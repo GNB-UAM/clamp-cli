@@ -126,7 +126,8 @@ int write_comedi (Comedi_session session, int n_channels, int * channels, double
     	range_info = get_range_info_comedi(session, COMEDI_OUTPUT, channels[i]);
     	maxdata = get_maxdata_comedi(session, COMEDI_OUTPUT, channels[i]);
 
-    	if (write_single_data_comedi (session, range_info, maxdata, channels[i], values[i]) != 0) {
+    	if (write_single_data_comedi (session, range_info, maxdata, channels[i], values[i]) != 1) {
+    		printf("Error writing from channel %d at iter %d\n", channels[i], i);
     		return -1;
     	}
     }
@@ -165,6 +166,7 @@ int write_single_data_comedi (Comedi_session session, comedi_range * range_info,
 
 	comedi_value = comedi_from_phys(data, range_info, maxdata);
 	if (comedi_value < 0 || comedi_value > maxdata) {
+		comedi_perror("write");
 		return -1;
 	}
 

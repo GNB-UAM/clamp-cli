@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 
 /* MACROS */
@@ -7,6 +8,7 @@
 #define IZHIKEVICH 0
 #define HR 1
 #define ELECTRIC 0
+#define CHEMICAL 1
 
 /*Izhikevich*/
 #define I_IZ 0
@@ -20,6 +22,14 @@
 #define R_HR 1
 #define S_HR 2
 
+/*Synapses*/
+#define G_FAST 0
+#define G_SLOW 1
+#define MS_K1 0
+#define MS_K2 1
+#define MS_SS 2
+#define MS_VS 3
+
 
 
 
@@ -27,7 +37,9 @@
 void runge_kutta_6 (void (*f) (double *, double *, double *, double), int dim, double dt, double * vars, double * params, double syn);
 
 /* SYNAPSES */
-void elec_syn (double v1, double v2, double * g, double * ret);
+void elec_syn (double v_post, double v_pre, double * g, double * ret, double * aux);
+
+void chem_syn (double v_post, double v_pre, double * g, double * ret, double * aux);
 
 /* IZHIKEVICH */
 void izh_f (double * vars, double * ret, double * params, double syn);

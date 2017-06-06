@@ -114,6 +114,12 @@ int main (int argc, char * argv[]) {
 	switch (synapse) {
 		case ELECTRIC:
 			r_args.syn = &elec_syn;
+			r_args.type_syn = synapse;
+
+			break;
+		case CHEMICAL:
+			r_args.syn = &chem_syn;
+			r_args.type_syn = synapse;
 
 			break;
 		default:

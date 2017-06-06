@@ -223,6 +223,14 @@ void * writer_thread(void * arg) {
             }
 
             fprintf(f1, "\n");
+
+            for (j = 0; j < msg.n_g; ++j) {
+                fprintf(f2, " %f", msg.g_real_to_virtual[j]);
+                fprintf(f2, " %f", msg.g_virtual_to_real[j]);
+            }
+
+
+            fprintf(f2, "\n");
             free(msg.data_in);
             free(msg.data_out);
         }
@@ -241,40 +249,40 @@ void * rt_thread(void * arg) {
     struct timespec ts_target, ts_iter, ts_result, ts_start;
     message msg;
     pthread_t id;
-    double syn;
 
-    double max, min, min_abs;
-    double maxV, minV, minV_abs;
+    double max_model, min_model, min_abs_model;
+    double max_real, min_real, min_abs_real;
     double scale_real_to_virtual;
     double scale_virtual_to_real;
     double offset_virtual_to_real;
     double offset_real_to_virtual;
 
-    double g_virtual_to_real=0.3;
-    double g_real_to_virtual=0.3;
-    double c_model, retval = 0;
+    double * g_virtual_to_real;
+    double * g_real_to_virtual;
+    double retval = 0;
+    double c_real = 0, c_model = 0;
+    double * syn_aux_params;
+
 
     double rafaga_modelo_pts_hr = 260166.0;
     double pts_por_s = 10000.0;
     double t_rafaga_viva_s = 0.4;
     double rafaga_viva_pts = pts_por_s * t_rafaga_viva_s;
-    /***************/
-    //args->s_points = (int) (rafaga_modelo_pts_hr / rafaga_viva_pts);
+    
 
 
     id = pthread_self();
     args = arg;
-    syn = 0;
-    msg.c_real = 0;
+    msg.c_real = c_real;
 
 
     comedi_t * d;
     Comedi_session session;
-    int in_channels [] = {0, 1};
+    int in_channels [] = {0};
     int out_channels [] = {0, 1};
-    int n_in_chan = 2;
+    int n_in_chan = 1;
     int n_out_chan = 2;
-    double ret_values [2];
+    double ret_values [1];
     double out_values [2];
     int calib_chan = 0;
 
@@ -290,21 +298,55 @@ void * rt_thread(void * arg) {
     session = create_session_comedi(d, AREF_GROUND);
 
 
-    //session_a = create_session_comedi(d, 0, 0, AREF_GROUND, UNIT_mA);
-
-
     prepare_real_time(id);
 
 
 
-    args->ini(args->vars, &min, &min_abs, &max);
-    if ( ini_recibido (&minV, &minV_abs, &maxV, session, calib_chan) == -1 ) return NULL;
-    calcula_escala (min_abs, max, minV_abs, maxV, &scale_virtual_to_real, &scale_real_to_virtual, &offset_virtual_to_real, &offset_real_to_virtual);
+    args->ini(args->vars, &min_model, &min_abs_model, &max_model);
+    if ( ini_recibido (&min_real, &min_abs_real, &max_real, session, calib_chan) == -1 ) {
+		close_device_comedi(d);
+        pthread_exit(NULL);
+	}
+    calcula_escala (min_abs_model, max_model, min_abs_real, max_real, &scale_virtual_to_real, &scale_real_to_virtual, &offset_virtual_to_real, &offset_real_to_virtual);
+
+    switch (args->type_syn) {
+		case ELECTRIC:
+			syn_aux_params = NULL;
+
+			g_virtual_to_real = (double *) malloc (sizeof(double) * 1);
+    		g_real_to_virtual = (double *) malloc (sizeof(double) * 1);
+			g_virtual_to_real[0] = 0.3;
+    		g_real_to_virtual[0] = 0.3;
+    		msg.n_g = 1;
+
+			break;
+		case CHEMICAL:
+			syn_aux_params = (double *) malloc (sizeof(double) * 2);
+			syn_aux_params[0] = min_abs_model * scale_virtual_to_real;
+			syn_aux_params[1] = args->dt;
+			syn_aux_params[2] = 0;
+
+			g_virtual_to_real = (double *) malloc (sizeof(double) * 2);
+    		g_real_to_virtual = (double *) malloc (sizeof(double) * 2);
+
+    		g_virtual_to_real[G_FAST] = 0.01;
+    		g_virtual_to_real[G_SLOW] = 0.02;
+    		g_real_to_virtual[G_FAST] = 0.01;
+    		g_real_to_virtual[G_SLOW] = 0.02;
+    		msg.n_g = 2;
+
+
+			break;
+		default:
+			close_device_comedi(d);
+        	pthread_exit(NULL);
+	}
 
 
     clock_gettime(CLOCK_MONOTONIC, &ts_target);
     ts_assign (&ts_start,  ts_target);
     ts_add_time(&ts_target, 0, PERIOD);
+
 
 
     for (i = 0; i < 5 * 10000 * args->s_points; i++) {
@@ -333,8 +375,10 @@ void * rt_thread(void * arg) {
             copy_1d_array(ret_values, msg.data_in, n_in_chan);
             copy_1d_array(out_values, msg.data_out, n_out_chan);
 
-            msg.g_real_to_virtual = 0;
-            msg.g_virtual_to_real = 0;
+            write_comedi(session, n_out_chan, out_channels, out_values);
+
+            msg.g_real_to_virtual = g_real_to_virtual;
+            msg.g_virtual_to_real = g_virtual_to_real;
 
             msgsnd(args->msqid, (struct msgbuf *) &msg, sizeof(message) - sizeof(long), IPC_NOWAIT);
 
@@ -342,11 +386,14 @@ void * rt_thread(void * arg) {
 
             if (read_comedi(session, n_in_chan, in_channels, ret_values) != 0) {
                 close_device_comedi(d);
+                free(syn_aux_params);
+                free(g_virtual_to_real);
+    			free(g_real_to_virtual);
                 pthread_exit(NULL);
             }
         }
         msg.c_real = 0;
-        args->func(args->dim, args->dt, args->vars, args->params, syn);
+        args->func(args->dim, args->dt, args->vars, args->params, c_real);
     }
 
 
@@ -362,7 +409,7 @@ void * rt_thread(void * arg) {
             msg.v_model = args->vars[0];
             msg.lat = ts_result.tv_sec * NSEC_PER_SEC + ts_result.tv_nsec;
 
-            args->syn(args->vars[0] * scale_virtual_to_real + offset_virtual_to_real, ret_values[0], &g_virtual_to_real, &c_model);
+            args->syn(args->vars[0] * scale_virtual_to_real + offset_virtual_to_real, ret_values[0], g_virtual_to_real, &c_model, syn_aux_params);
             msg.c_model = c_model;
 
 
@@ -390,17 +437,23 @@ void * rt_thread(void * arg) {
 
             if (read_comedi(session, n_in_chan, in_channels, ret_values) != 0) {
                 close_device_comedi(d);
+                free(syn_aux_params);
+                free(g_virtual_to_real);
+    			free(g_real_to_virtual);
                 pthread_exit(NULL);
             }
         }
 
          
-        args->syn(ret_values[0] * scale_real_to_virtual + offset_real_to_virtual, args->vars[0], &g_real_to_virtual, &syn);
-        msg.c_real = -syn;
+        args->syn(ret_values[0] * scale_real_to_virtual + offset_real_to_virtual, args->vars[0], g_real_to_virtual, &c_real, syn_aux_params);
+        msg.c_real = c_real;
 
-        args->func(args->dim, args->dt, args->vars, args->params, -syn);
+        args->func(args->dim, args->dt, args->vars, args->params, -c_real);
     }
 
     close_device_comedi(d);
+    free(syn_aux_params);
+    free(g_virtual_to_real);
+    free(g_real_to_virtual);
     pthread_exit(NULL);
 }

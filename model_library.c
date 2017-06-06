@@ -69,10 +69,51 @@ void runge_kutta_6 (void (*f) (double *, double *, double *, double), int dim, d
 
 /* SYNAPSES */
 
-void elec_syn (double v1, double v2, double * g, double * ret) {
-    *ret = (*g) * (v1 - v2);
+void elec_syn (double v_post, double v_pre, double * g, double * ret, double * aux) {
+    *ret = g[0] * (v_post - v_pre);
     return;
 }
+
+void ms_f (double * vars, double * ret, double * params, double v_pre) {
+    double p1, p2, p3;
+
+    p1 = params[MS_K1] * (1.0 - vars[0]);
+    p2 = 1.0 + exp(params[MS_SS] * (params[MS_VS] - v_pre));
+    p3 = params[MS_K2] * vars[0];
+    
+    ret[0] = (p1 / p2) - p3;
+    return;
+}
+    
+
+double chem_fast (double v_post, double v_pre, double * g, double * aux) {
+    double e_syn = aux[0] * 1.153846;
+    double v_f = aux[0] * 0.769230;
+    return ((*g) * (v_post - e_syn)) / (1.0 + exp(0.2 * (v_f - v_pre)));
+}
+
+double chem_slow (double v_post, double * g, double * aux) {
+    double vars[1] = {aux[2]};
+    double params[4];
+    double e_syn = aux[0] * 1.153846;
+
+    params[MS_K1] = 1;
+    params[MS_K2] = 0.03;
+    params[MS_SS] = 1;
+    params[MS_VS] = aux[0] * 0.846153;
+
+    runge_kutta_6(&ms_f, 1, aux[1], vars, params, 0);
+    aux[2] = vars[0];
+
+    return (*g) * aux[2] * (v_post - e_syn);
+}
+
+void chem_syn (double v_post, double v_pre, double * g, double * ret, double * aux) {
+    *ret = chem_fast(v_post, v_pre, &(g[G_FAST]), aux) + chem_slow(v_post, &(g[G_SLOW]), aux);
+    return;
+}
+
+
 
 
 /* IZHIKEVICH */
