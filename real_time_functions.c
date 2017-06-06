@@ -73,7 +73,7 @@ void prepare_real_time (pthread_t id) {
 
 /* CALIBRATION FUNCTIONS (MANU) */
 
-int ini_recibido (double *min, double *min_abs, double *max, Comedi_session session, int chan){
+int ini_recibido (double *min, double *min_abs, double *max, Comedi_session session, int chan, int period){
     
     /*Vamos a escanear 10000 puntos durante x segundos para determinar min y max*/
     int i=0;
@@ -97,7 +97,7 @@ int ini_recibido (double *min, double *min_abs, double *max, Comedi_session sess
 
     clock_gettime(CLOCK_MONOTONIC, &ts_target);
     ts_assign (&ts_start,  ts_target);
-    ts_add_time(&ts_target, 0, PERIOD);
+    ts_add_time(&ts_target, 0, period);
 
 
     for (i=0; i<10000*(segs_observo); i++){
@@ -126,7 +126,7 @@ int ini_recibido (double *min, double *min_abs, double *max, Comedi_session sess
         if(i%10==0)
             valor_old=retval;
 
-        ts_add_time(&ts_target, 0, PERIOD); 
+        ts_add_time(&ts_target, 0, period); 
     }
 
 
@@ -212,7 +212,7 @@ void * writer_thread(void * arg) {
     f3 = fopen(filename_3, "w");
 
 
-    fprintf(f3, "Model: %d\nSynapse: %d\nPeriod: %d ns", args->model, args->type_syn, PERIOD);
+    fprintf(f3, "Model: %d\nSynapse: %d\nPeriod: %d ns", args->model, args->type_syn, args->period);
     fclose(f3);
     
 
@@ -220,16 +220,16 @@ void * writer_thread(void * arg) {
         if (i % args->s_points == 0) {
             msgrcv(args->msqid, (struct msgbuf *)&msg, sizeof(message) - sizeof(long), 1, 0);
 
-            if (i == 0) fprintf(f1, "%d %d\n", msg.in_chan, msg.out_chan);
+            if (i == 0) fprintf(f1, "%d %d\n", msg.n_in_chan, msg.n_out_chan);
 
             fprintf(f1, "%f %f %d %ld %f %f %f %f", msg.t_unix, msg.t_absol, msg.i, msg.lat, msg.v_model, msg.v_model_scaled, msg.c_model, msg.c_real);
             fprintf(f2, "%f %d", msg.t_absol, msg.i);
 
-            for (j = 0; j < msg.in_chan; ++j) {
+            for (j = 0; j < msg.n_in_chan; ++j) {
                 fprintf(f1, " %f", msg.data_in[j]);
             }
 
-            for (j = 0; j < msg.out_chan; ++j) {
+            for (j = 0; j < msg.n_out_chan; ++j) {
                 fprintf(f1, " %f", msg.data_out[j]);
             }
 
@@ -289,17 +289,16 @@ void * rt_thread(void * arg) {
 
     comedi_t * d;
     Comedi_session session;
-    int in_channels [] = {0};
+    /*int in_channels [] = {0};
     int out_channels [] = {0, 1};
     int n_in_chan = 1;
-    int n_out_chan = 2;
+    int n_out_chan = 2;*/
     double ret_values [1];
     double out_values [2];
     int calib_chan = 0;
 
-
-    msg.in_chan = n_in_chan;
-    msg.out_chan = n_out_chan;
+    msg.n_in_chan = args->n_in_chan;
+    msg.n_out_chan = args->n_out_chan;
 
 
 
@@ -311,15 +310,21 @@ void * rt_thread(void * arg) {
 
     prepare_real_time(id);
 
-
-
     args->ini(args->vars, &min_model, &min_abs_model, &max_model);
-    if ( ini_recibido (&min_real, &min_abs_real, &max_real, session, calib_chan) == -1 ) {
-		close_device_comedi(d);
-        pthread_exit(NULL);
-	}
-    calcula_escala (min_abs_model, max_model, min_abs_real, max_real, &scale_virtual_to_real, &scale_real_to_virtual, &offset_virtual_to_real, &offset_real_to_virtual);
 
+    if (args->n_in_chan > 0) {
+	    if ( ini_recibido (&min_real, &min_abs_real, &max_real, session, calib_chan, args->period) == -1 ) {
+			close_device_comedi(d);
+	        pthread_exit(NULL);
+		}
+	    calcula_escala (min_abs_model, max_model, min_abs_real, max_real, &scale_virtual_to_real, &scale_real_to_virtual, &offset_virtual_to_real, &offset_real_to_virtual);
+    } else {
+    	scale_real_to_virtual = 1;
+	    scale_virtual_to_real = 1;
+	    offset_virtual_to_real = 0;
+	    offset_real_to_virtual = 0;
+    }
+ 
     switch (args->type_syn) {
 		case ELECTRIC:
 			syn_aux_params = NULL;
@@ -356,8 +361,7 @@ void * rt_thread(void * arg) {
 
     clock_gettime(CLOCK_MONOTONIC, &ts_target);
     ts_assign (&ts_start,  ts_target);
-    ts_add_time(&ts_target, 0, PERIOD);
-
+    ts_add_time(&ts_target, 0, args->period);
 
 
     for (i = 0; i < 5 * 10000 * args->s_points; i++) {
@@ -380,33 +384,34 @@ void * rt_thread(void * arg) {
             out_values[0] = msg.c_model;
             out_values[1] = msg.v_model_scaled;
 
-            msg.data_in = (double *) malloc (sizeof(double) * n_in_chan);
-            msg.data_out = (double *) malloc (sizeof(double) * n_out_chan);
+            msg.data_in = (double *) malloc (sizeof(double) * args->n_in_chan);
+            msg.data_out = (double *) malloc (sizeof(double) * args->n_out_chan);
 
-            copy_1d_array(ret_values, msg.data_in, n_in_chan);
-            copy_1d_array(out_values, msg.data_out, n_out_chan);
+            copy_1d_array(ret_values, msg.data_in, args->n_in_chan);
+            copy_1d_array(out_values, msg.data_out, args->n_out_chan);
 
-            write_comedi(session, n_out_chan, out_channels, out_values);
+            write_comedi(session, args->n_out_chan, args->out_channels, out_values);
 
             msg.g_real_to_virtual = g_real_to_virtual;
             msg.g_virtual_to_real = g_virtual_to_real;
 
             msgsnd(args->msqid, (struct msgbuf *) &msg, sizeof(message) - sizeof(long), IPC_NOWAIT);
 
-            ts_add_time(&ts_target, 0, PERIOD);
+            ts_add_time(&ts_target, 0, args->period);
 
-            if (read_comedi(session, n_in_chan, in_channels, ret_values) != 0) {
+            if (read_comedi(session, args->n_in_chan, args->in_channels, ret_values) != 0) {
                 close_device_comedi(d);
                 free(syn_aux_params);
                 free(g_virtual_to_real);
     			free(g_real_to_virtual);
+    			free(args->in_channels);
+    			free(args->out_channels);
                 pthread_exit(NULL);
             }
         }
         msg.c_real = 0;
         args->func(args->dim, args->dt, args->vars, args->params, c_real);
     }
-
 
     for (i = 0; i < args->points * args->s_points; i++) {
         if (i % args->s_points == 0) {
@@ -434,23 +439,25 @@ void * rt_thread(void * arg) {
             msg.g_real_to_virtual = g_real_to_virtual;
             msg.g_virtual_to_real = g_virtual_to_real;
 
-            msg.data_in = (double *) malloc (sizeof(double) * n_in_chan);
-            msg.data_out = (double *) malloc (sizeof(double) * n_out_chan);
+            msg.data_in = (double *) malloc (sizeof(double) * args->n_in_chan);
+            msg.data_out = (double *) malloc (sizeof(double) * args->n_out_chan);
 
-            copy_1d_array(ret_values, msg.data_in, n_in_chan);
-            copy_1d_array(out_values, msg.data_out, n_out_chan);
+            copy_1d_array(ret_values, msg.data_in, args->n_in_chan);
+            copy_1d_array(out_values, msg.data_out, args->n_out_chan);
 
-            write_comedi(session, n_out_chan, out_channels, out_values);
+            write_comedi(session, args->n_out_chan, args->out_channels, out_values);
 
             msgsnd(args->msqid, (struct msgbuf *) &msg, sizeof(message) - sizeof(long), IPC_NOWAIT);
 
-            ts_add_time(&ts_target, 0, PERIOD);
+            ts_add_time(&ts_target, 0, args->period);
 
-            if (read_comedi(session, n_in_chan, in_channels, ret_values) != 0) {
+            if (read_comedi(session, args->n_in_chan, args->in_channels, ret_values) != 0) {
                 close_device_comedi(d);
                 free(syn_aux_params);
                 free(g_virtual_to_real);
     			free(g_real_to_virtual);
+    			free(args->in_channels);
+    			free(args->out_channels);
                 pthread_exit(NULL);
             }
         }
@@ -462,9 +469,17 @@ void * rt_thread(void * arg) {
         args->func(args->dim, args->dt, args->vars, args->params, -c_real);
     }
 
+    for (i = 0; i < args->n_out_chan; i++) {
+    	out_values[i] = 0;
+    }
+    
+    write_comedi(session, args->n_out_chan, args->out_channels, out_values);
+
     close_device_comedi(d);
     free(syn_aux_params);
     free(g_virtual_to_real);
     free(g_real_to_virtual);
+    free(args->in_channels);
+    free(args->out_channels);
     pthread_exit(NULL);
 }

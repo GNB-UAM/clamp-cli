@@ -173,3 +173,60 @@ void ini_hr (double * vars, double *min, double *minABS, double *max){
     //rafaga_hr=260166;
     return;
 }
+
+
+
+/* RULKOV MAP */
+
+void rlk_f (double * vars, double * ret, double * params, double syn) {
+    if (vars[0] <= 0) {
+        ret[0] = params[ALPHA_RLK] / (1 - vars[0]) + vars[1]; 
+    } else if (vars[0] >= params[ALPHA_RLK] + vars[1]) {
+        ret[0] = -1;
+    } else {
+        ret[0] = params[ALPHA_RLK] + vars[1];
+    }
+
+    ret[1] = vars[1] - params[MU_RLK] * (vars[0] + 1) + params[MU_RLK] * params[SIGMA_RLK] + syn * params[I_RLK];
+
+    return;
+}
+
+void rulkov_map (int dim, double dt, double * vars, double * params, double syn) {
+    double ret[2];
+
+    if (params[J_RLK] < ((params[PTS_RLK] - 400) / 400)) {
+        printf("x %f  old %f  j %f\n", vars[0], (vars[0] - params[OLD_RLK]) / ((params[PTS_RLK] - 400) / 400) * params[J_RLK], ((params[PTS_RLK] - 400) / 400) * params[J_RLK]);
+        ret[0] = params[OLD_RLK] + (vars[0] - params[OLD_RLK]) / ((params[PTS_RLK] - 400) / 400) * params[J_RLK];
+        ret[1] = vars[1];
+        params[J_RLK]++;
+
+        printf("ret inter %f\n", ret[0]);
+
+    } else {
+        params[OLD_RLK] = vars[0];
+        rlk_f(vars, ret, params, syn);
+        params[J_RLK] = 0;
+    }
+
+    vars[0] = ret[0];
+    vars[1] = ret[1];
+
+    return;
+}
+
+void ini_rlk (double * vars, double *min, double *minABS, double *max){
+    vars[0]=-1.701747;
+    vars[1]=-4.919226;
+    *min=-1.18;
+    *minABS=-1.977;
+    *max=2.111;
+    return;
+}
+
+
+
+
+
+
+

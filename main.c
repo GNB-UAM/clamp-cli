@@ -16,6 +16,58 @@ plt.show()
 */
 
 
+struct option main_opts[] = {
+	{"frequency", required_argument, NULL, 'f'},
+	{"time", required_argument, NULL, 't'},
+	{"model", required_argument, NULL, 'm'},
+	{"synapse", required_argument, NULL, 's'},
+	{"input_channels", required_argument, NULL, 'i'},
+	{"output_channels", required_argument, NULL, 'o'},
+	{"help", no_argument, NULL, 'h'},
+	{0},
+};
+
+void do_print_usage ()
+{
+	printf("usage:\tmain [OPTS]\n");
+	printf("\tOPTS:\t -f, --frequency: sample frequency (in Hz)\n");
+	printf("\t\t -t, --time: simulation time (in ns)\n");
+	printf("\t\t -m, --model: neural model (0 = Izhikevich, 1 = Hindmarsh-Rose, 2 = Rulkov Map)\n");
+	printf("\t\t -s, --synapse: synapse type (0 = electrical, 1 = gradual)\n");
+	printf("\t\t -i, --input_channels: input channels, separated by commas (ej: 0,2,3,7)\n");
+	printf("\t\t -o, --output_channels: output channels, separated by commas (ej: 0,2,3,7)\n");
+	printf("\t\t -h, --help: print this help\n");
+}
+
+
+
+void parse_channels (char * str, int ** channels, int * n_chan) {
+	int n_chan_aux = 0;
+	int chan_aux[32];
+	char * token = NULL;
+	int i;
+
+	token = strtok(str, ",");
+	
+
+	while (token != NULL) {
+		chan_aux[n_chan_aux] = atoi(token);
+		n_chan_aux++;
+
+		token = strtok(NULL, ",");
+	}
+
+	*channels = (int *) malloc (sizeof(int) * n_chan_aux);
+	*n_chan = n_chan_aux;
+
+	for (i = 0; i < n_chan_aux; i++) {
+		(*channels)[i] = chan_aux[i];
+	}
+
+	return;
+}
+
+
 int main (int argc, char * argv[]) {
 	key_t key_q;
 	pthread_attr_t attr;
@@ -43,9 +95,46 @@ int main (int argc, char * argv[]) {
     double t_rafaga_viva_s;
     double rafaga_viva_pts;
 
+    int model = 0;
+	int synapse = 0;
+	double freq = 10000.0;
+	int time_var = 0;
+	int ret = 0;
 
-	int model = atoi(argv[2]);
-	int synapse = atoi(argv[3]);
+	r_args.n_in_chan = 0;
+	r_args.n_out_chan = 0;
+	r_args.in_channels = NULL;
+	r_args.out_channels = NULL;
+
+
+    while ((ret = getopt_long(argc, argv, "f:t:m:s:ci:co:h", main_opts, NULL)) >= 0) {
+		switch (ret) {
+		case 'f':
+			freq = atof(optarg);
+			break;
+		case 't':
+			time_var = atoi(optarg);
+			break;
+		case 'm':
+			model = atoi(optarg);
+			break;
+		case 's':
+			synapse = atoi(optarg);
+			break;
+		case 'i':
+			parse_channels(optarg, &(r_args.in_channels), &(r_args.n_in_chan));
+			break;
+		case 'o':
+			parse_channels(optarg, &(r_args.out_channels), &(r_args.n_out_chan));
+			break;
+		case 'h':
+		default:
+			do_print_usage();
+			return 0;
+		}
+	}
+
+
 
 
 	switch (model){
@@ -58,9 +147,6 @@ int main (int argc, char * argv[]) {
 		    t_rafaga_viva_s = 0.3;
 		    rafaga_viva_pts = pts_por_s * t_rafaga_viva_s;
 
-
-			vars[0] = 10.0;
-			vars[1] = 0.0;
 
 			params[I_IZ] = 10.0;
 			params[A_IZ] = 0.02;
@@ -88,9 +174,6 @@ int main (int argc, char * argv[]) {
 		    t_rafaga_viva_s = 0.4;
 		    rafaga_viva_pts = pts_por_s * t_rafaga_viva_s;
 
-			vars[0] = -2.0;
-			vars[1] = 0.0;
-			vars[2] = 0.0;
 
 			params[I_HR] = 3.0;
 			params[R_HR] = 0.0021;
@@ -105,6 +188,34 @@ int main (int argc, char * argv[]) {
 
 			r_args.func = &hindmarsh_rose;
 			r_args.ini = &ini_hr;
+
+			break;
+		case RLK:
+			vars = (double*) malloc (sizeof(double) * 2);
+			params = (double*) malloc (sizeof(double) * 7);
+
+			rafaga_modelo_pts_hr = 260166.0;
+		    pts_por_s = 10000.0;
+		    t_rafaga_viva_s = 0.4;
+		    rafaga_viva_pts = pts_por_s * t_rafaga_viva_s;
+
+			params[I_RLK] = 1.0;
+			params[ALPHA_RLK] = 6.0;
+			params[SIGMA_RLK] = 0.1;
+			params[MU_RLK] = 0.001;
+			params[OLD_RLK] = 0.0;
+			params[PTS_RLK] = freq;
+			params[J_RLK] = ((params[PTS_RLK] - 400) / 400) + 1;
+
+			r_args.params = params;
+			r_args.vars = vars;
+
+			r_args.dim = 2;
+			r_args.s_points = 1;
+			r_args.dt = 0.003;
+
+			r_args.func = &rulkov_map;
+			r_args.ini = &ini_rlk;
 
 			break;
 		default:
@@ -158,7 +269,8 @@ int main (int argc, char * argv[]) {
         
 
     r_args.msqid = msqid;
-    r_args.points = atoi(argv[1]) * 10000;
+    r_args.points = time_var * freq;
+    r_args.period = 1 / freq * NSEC_PER_SEC;
     r_args.type_syn = synapse;
 
     w_args.filename = filename;

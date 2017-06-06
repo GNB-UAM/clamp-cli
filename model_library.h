@@ -7,6 +7,7 @@
 
 #define IZHIKEVICH 0
 #define HR 1
+#define RLK 2
 #define ELECTRIC 0
 #define CHEMICAL 1
 
@@ -21,6 +22,15 @@
 #define I_HR 0
 #define R_HR 1
 #define S_HR 2
+
+/*Rulkov Map*/
+#define I_RLK 0
+#define ALPHA_RLK 1
+#define MU_RLK 2
+#define SIGMA_RLK 3
+#define J_RLK 4
+#define OLD_RLK 5
+#define PTS_RLK 6
 
 /*Synapses*/
 #define G_FAST 0
@@ -55,3 +65,10 @@ void hr_f (double * vars, double * ret, double * params, double syn);
 void hindmarsh_rose (int dim, double dt, double * vars, double * params, double syn);
 
 void ini_hr (double * vars, double *min, double *minABS, double *max);
+
+/* HINDMARSH-ROSE */
+void rlk_f (double * vars, double * ret, double * params, double syn);
+
+void rulkov_map (int dim, double dt, double * vars, double * params, double syn);
+
+void ini_rlk (double * vars, double *min, double *minABS, double *max);

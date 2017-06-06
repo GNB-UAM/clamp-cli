@@ -10,13 +10,13 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <getopt.h>
 #include "comedi_functions.h"
 #include "model_library.h"
 
 
 #define MAX_SAFE_STACK (8*1024)
 #define PRIORITY (99)
-#define PERIOD (100000) //In ns
 #define NSEC_PER_SEC (1000000000) /* The number of nsecs per sec. */
 #define MAX_LAT (900000)
 #define CORE (0)
@@ -34,11 +34,10 @@ typedef struct {
     double v_model_scaled;
     double c_model;
     double c_real;
-    int in_chan;
-    int out_chan;
+    int n_in_chan;
+    int n_out_chan;
     double * data_in;
     double * data_out;
-
     /* Fichero 2*/
     double * g_real_to_virtual;
     double * g_virtual_to_real;
@@ -59,6 +58,11 @@ typedef struct {
     long points;
     int s_points;
     int msqid;
+    int period;
+    int n_in_chan;
+    int n_out_chan;
+    int * in_channels;
+    int * out_channels;
 } rt_args;
 
 
@@ -69,6 +73,7 @@ typedef struct {
     int s_points;
     int type_syn;
     int model;
+    int period;
 } writer_args;
 
 void ts_substraction (struct timespec * start, struct timespec * stop, struct timespec * result);
