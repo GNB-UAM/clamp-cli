@@ -38,6 +38,7 @@ v_model_scaled = data[:, 5]
 c_model = data[:, 6]
 c_viva = data[:, 7]
 
+
 data_in = []
 for j in range(8, 8 + n_in_chan):
 	data_in.append(data[:, j])
@@ -45,6 +46,10 @@ for j in range(8, 8 + n_in_chan):
 data_out = []
 for j in range(8 + n_in_chan, 8 + n_in_chan + n_out_chan):
 	data_out.append(data[:, j])
+
+
+plt.plot(v_model_scaled)
+plt.show()
 
 '''
 iteration

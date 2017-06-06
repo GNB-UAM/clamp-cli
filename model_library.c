@@ -179,15 +179,20 @@ void ini_hr (double * vars, double *min, double *minABS, double *max){
 /* RULKOV MAP */
 
 void rlk_f (double * vars, double * ret, double * params, double syn) {
+    double y_old;
+
+    ret[1] = vars[1] - params[MU_RLK] * (vars[0] + 1) + params[MU_RLK] * params[SIGMA_RLK];
+    y_old = vars[1] + syn * params[I_RLK];
+
+
     if (vars[0] <= 0) {
-        ret[0] = params[ALPHA_RLK] / (1 - vars[0]) + vars[1]; 
-    } else if (vars[0] >= params[ALPHA_RLK] + vars[1]) {
+        ret[0] = params[ALPHA_RLK] / (1 - vars[0]) + y_old;
+    } else if (vars[0] >= params[ALPHA_RLK] + y_old) {
         ret[0] = -1;
     } else {
-        ret[0] = params[ALPHA_RLK] + vars[1];
+        ret[0] = params[ALPHA_RLK] + y_old;
     }
 
-    ret[1] = vars[1] - params[MU_RLK] * (vars[0] + 1) + params[MU_RLK] * params[SIGMA_RLK] + syn * params[I_RLK];
 
     return;
 }
@@ -195,19 +200,20 @@ void rlk_f (double * vars, double * ret, double * params, double syn) {
 void rulkov_map (int dim, double dt, double * vars, double * params, double syn) {
     double ret[2];
 
-    if (params[J_RLK] < ((params[PTS_RLK] - 400) / 400)) {
-        printf("x %f  old %f  j %f\n", vars[0], (vars[0] - params[OLD_RLK]) / ((params[PTS_RLK] - 400) / 400) * params[J_RLK], ((params[PTS_RLK] - 400) / 400) * params[J_RLK]);
-        ret[0] = params[OLD_RLK] + (vars[0] - params[OLD_RLK]) / ((params[PTS_RLK] - 400) / 400) * params[J_RLK];
-        ret[1] = vars[1];
-        params[J_RLK]++;
-
-        printf("ret inter %f\n", ret[0]);
-
-    } else {
+    if (params[J_RLK] >= ((params[PTS_RLK] - 400) / 400)) {
         params[OLD_RLK] = vars[0];
         rlk_f(vars, ret, params, syn);
         params[J_RLK] = 0;
+        params[INTER_RLK] = ret[0];
+
+        vars[0] = ret[0];
+        vars[1] = ret[1];
     }
+
+    ret[0] = params[OLD_RLK] + (params[INTER_RLK] - params[OLD_RLK]) / ((params[PTS_RLK] - 400) / 400) * params[J_RLK];
+    ret[1] = vars[1];
+    params[J_RLK]++;
+
 
     vars[0] = ret[0];
     vars[1] = ret[1];

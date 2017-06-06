@@ -345,10 +345,10 @@ void * rt_thread(void * arg) {
 			g_virtual_to_real = (double *) malloc (sizeof(double) * 2);
     		g_real_to_virtual = (double *) malloc (sizeof(double) * 2);
 
-    		g_virtual_to_real[G_FAST] = 0.01;
-    		g_virtual_to_real[G_SLOW] = 0.02;
-    		g_real_to_virtual[G_FAST] = 0.01;
-    		g_real_to_virtual[G_SLOW] = 0.02;
+    		g_virtual_to_real[G_FAST] = 0.1;
+    		g_virtual_to_real[G_SLOW] = 0.2;
+    		g_real_to_virtual[G_FAST] = 0.1;
+    		g_real_to_virtual[G_SLOW] = 0.2;
     		msg.n_g = 2;
 
 
@@ -472,7 +472,7 @@ void * rt_thread(void * arg) {
     for (i = 0; i < args->n_out_chan; i++) {
     	out_values[i] = 0;
     }
-    
+
     write_comedi(session, args->n_out_chan, args->out_channels, out_values);
 
     close_device_comedi(d);

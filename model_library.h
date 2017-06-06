@@ -31,6 +31,7 @@
 #define J_RLK 4
 #define OLD_RLK 5
 #define PTS_RLK 6
+#define INTER_RLK 7
 
 /*Synapses*/
 #define G_FAST 0

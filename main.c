@@ -192,7 +192,7 @@ int main (int argc, char * argv[]) {
 			break;
 		case RLK:
 			vars = (double*) malloc (sizeof(double) * 2);
-			params = (double*) malloc (sizeof(double) * 7);
+			params = (double*) malloc (sizeof(double) * 8);
 
 			rafaga_modelo_pts_hr = 260166.0;
 		    pts_por_s = 10000.0;
@@ -206,6 +206,7 @@ int main (int argc, char * argv[]) {
 			params[OLD_RLK] = 0.0;
 			params[PTS_RLK] = freq;
 			params[J_RLK] = ((params[PTS_RLK] - 400) / 400) + 1;
+			params[INTER_RLK] = 0.0;
 
 			r_args.params = params;
 			r_args.vars = vars;
