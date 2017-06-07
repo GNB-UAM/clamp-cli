@@ -260,6 +260,7 @@ int main (int argc, char * argv[]) {
     r_args.period = 1 / freq * NSEC_PER_SEC;
     r_args.type_syn = synapse;
     r_args.freq = freq;
+    r_args.filename = filename;
 
     w_args.filename = filename;
     w_args.points = r_args.points;

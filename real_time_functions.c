@@ -71,7 +71,7 @@ void prepare_real_time (pthread_t id) {
 
 /* CALIBRATION FUNCTIONS (MANU) */
 
-int ini_recibido (double *min, double *min_abs, double *max, double *period_signal, Comedi_session session, int chan, int period, int freq){
+int ini_recibido (double *min, double *min_abs, double *max, double *period_signal, Comedi_session session, int chan, int period, int freq, char* filename){
     
     /*TIEMPO OBSERVACION*/
     int segs_observo = 4; 
@@ -146,6 +146,8 @@ int ini_recibido (double *min, double *min_abs, double *max, double *period_sign
     signal_average (lectura, size_lectura, media, size_media);
     *period_signal = signal_period (segs_observo, convolution, size_lectura, *min);
     //printf("Perido signal = %f\n", *period_signal);
+    array_to_file(lectura, size_lectura, filename, "lectura_ini");
+    array_to_file(convolution, size_lectura, filename, "lectura_ini_filtro");
 
     /*PRINTF DEBUG*/
     /*printf("LECTURA INICIAL\n");
@@ -207,6 +209,23 @@ double signal_period(int seg_observacion, double * signal, int size, double th){
 	return period;
 }
 
+void array_to_file(double * array, int size, char * filename_date, char * tittle){
+    FILE * f;
+    char filename[100];
+    sprintf(filename, "%s_%s.txt", filename_date, tittle);
+    f = fopen(filename, "w");
+    int i;
+
+    for(i=0; i<size; i++){
+        fprintf(f, "%f\n", array[i]);
+    }
+
+    fflush(f);
+    fclose(f);
+    sleep(1);
+    return;
+}
+
 void calcula_escala (double min_virtual, double max_virtual, double min_viva, double max_viva, double *scale_virtual_to_real, double *scale_real_to_virtual, double *offset_virtual_to_real, double *offset_real_to_virtual){
     
     double rg_virtual, rg_viva;
@@ -225,8 +244,6 @@ void calcula_escala (double min_virtual, double max_virtual, double min_viva, do
     //printf("ESCALAS CALCULADAS\n\n");
     return;
 }
-
-
 
 /* THREADS FUNCTIONS */
 
@@ -274,7 +291,7 @@ void * writer_thread(void * arg) {
     f3 = fopen(filename_3, "a");
 
 
-    fprintf(f3, "%s\nModel: %d\nSynapse: %d\nPeriod: %d ns\n\n\n", args->filename, args->model, args->type_syn, args->period);
+    fprintf(f3, "%s\nModel: %d\nSynapse: %d\nFreq: %d ns\n\n\n", args->filename, args->model, args->type_syn, args->freq);
     fclose(f3);
 
     msgrcv(args->msqid, (struct msgbuf *)&msg2, sizeof(message_s_points) - sizeof(long), 1, 0);
@@ -369,7 +386,7 @@ void * rt_thread(void * arg) {
 
     /*CALIBRADO ESPACIAL-TEMPORAL*/
     if (args->n_in_chan > 0) {
-	    if ( ini_recibido (&min_real, &min_abs_real, &max_real, &period_disp_real, session, calib_chan, args->period, args->freq) == -1 ) {
+	    if ( ini_recibido (&min_real, &min_abs_real, &max_real, &period_disp_real, session, calib_chan, args->period, args->freq, args->filename) == -1 ) {
 			close_device_comedi(d);
 	        pthread_exit(NULL);
 		}
@@ -387,6 +404,9 @@ void * rt_thread(void * arg) {
     args->s_points = args->rafaga_modelo_pts / rafaga_viva_pts;
     msg2.s_points = args->s_points;
     msg2.id = 1;
+
+    printf("\n - Phase 1 OK\n - Phase 2 START\n\n");
+    fflush(stdout);
 
     msgsnd(args->msqid, (struct msgbuf *) &msg2, sizeof(message_s_points) - sizeof(long), IPC_NOWAIT);
 

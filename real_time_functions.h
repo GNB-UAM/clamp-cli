@@ -73,6 +73,7 @@ typedef struct {
     int * out_channels;
     int freq;
     int rafaga_modelo_pts;
+    char * filename;
 } rt_args;
 
 
@@ -106,4 +107,6 @@ int signal_convolution (double * lectura, int size_l, double * result, int size_
 int signal_average(double * lectura, int size_l, double * result, int size_r);
 
 double signal_period(int freq, double * signal, int size, double th);
+
+void array_to_file(double * array, int size, char * filename_date, char * tittle);
 
