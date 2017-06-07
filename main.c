@@ -137,7 +137,7 @@ int main (int argc, char * argv[]) {
 	switch (model){
 		case IZHIKEVICH:
 			vars = (double*) malloc (sizeof(double) * 2);
-			params = (double*) malloc (sizeof(double) * 4);
+			params = (double*) malloc (sizeof(double) * 5);
 
 			r_args.rafaga_modelo_pts = 59324.0;
 			r_args.dt = 0.001;
@@ -267,6 +267,7 @@ int main (int argc, char * argv[]) {
     w_args.msqid = msqid;
     w_args.type_syn = synapse;
     w_args.model = model;
+    w_args.freq = freq;
 
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);

@@ -144,7 +144,8 @@ int ini_recibido (double *min, double *min_abs, double *max, double *period_sign
     /*PERIODO DE LA SEÑAL*/
     signal_convolution (lectura, size_lectura, convolution, size_lectura);
     signal_average (lectura, size_lectura, media, size_media);
-    *period_signal = signal_period (freq, convolution, size_lectura, *min);
+    *period_signal = signal_period (segs_observo, convolution, size_lectura, *min);
+    //printf("Perido signal = %f\n", *period_signal);
 
     /*PRINTF DEBUG*/
     /*printf("LECTURA INICIAL\n");
@@ -162,6 +163,8 @@ int signal_convolution (double * lectura, int size_l, double * result, int size_
 	for (i=0; i<size_l; i++){
 	  if(i>3){
         result[i]= 0.2*lectura[i]  + 0.2*lectura[i-1] + 0.2*lectura[i-2] + 0.2*lectura[i-3] + 0.2*lectura[i-4];
+      }else{
+        result[i]=lectura[i];
       }
 	}
 	return OK;
@@ -185,7 +188,7 @@ int signal_average(double * lectura, int size_l, double * result, int size_r){
 	return OK;
 }
 
-double signal_period(int freq, double * signal, int size, double th){
+double signal_period(int seg_observacion, double * signal, int size, double th){
 	int up=FALSE;
 	if (signal[0]>th)
 		up=TRUE;
@@ -200,8 +203,7 @@ double signal_period(int freq, double * signal, int size, double th){
 			up=TRUE;
 		}
 	}
-
-	double period = 1.0 / (changes/freq);
+	double period = 1.0 / (changes/seg_observacion);
 	return period;
 }
 
@@ -241,17 +243,19 @@ void copy_1d_array (double * src, double * dst, int n_elems) {
 
 void * writer_thread(void * arg) {
     message msg;
+    message_s_points msg2;
     pthread_t id;
     FILE * f1, * f2, *f3;
     writer_args * args;
     int i, j;
+    int s_points;
 
     args = arg;
     id = pthread_self();
 
     char filename_1 [strlen(args->filename) + 6];
     char filename_2 [strlen(args->filename) + 6];
-    char filename_3 [strlen(args->filename) + 12];
+    char * filename_3 = "data/summary.txt";
 
     if (sprintf(filename_1, "%s_1.txt", args->filename) < 0) {
         printf("Error creating file 1 name\n;");
@@ -263,24 +267,22 @@ void * writer_thread(void * arg) {
         pthread_exit(NULL);
     }
 
-    if (sprintf(filename_3, "%s_summary.txt", args->filename) < 0) {
-        printf("Error creating file summary name\n;");
-        pthread_exit(NULL);
-    }
-
 
     umask(1);
     f1 = fopen(filename_1, "w");
     f2 = fopen(filename_2, "w");
-    f3 = fopen(filename_3, "w");
+    f3 = fopen(filename_3, "a");
 
 
-    fprintf(f3, "Model: %d\nSynapse: %d\nPeriod: %d ns", args->model, args->type_syn, args->period);
+    fprintf(f3, "%s\nModel: %d\nSynapse: %d\nPeriod: %d ns\n\n\n", args->filename, args->model, args->type_syn, args->period);
     fclose(f3);
+
+    msgrcv(args->msqid, (struct msgbuf *)&msg2, sizeof(message_s_points) - sizeof(long), 1, 0);
+    s_points = msg2.s_points;
     
 
-    for (i = 0; i < args->points * args->s_points; i++) {
-        if (i % args->s_points == 0) {
+    for (i = 0; i < (5 * args->freq + args->points) * s_points; i++) {
+        if (i % s_points == 0) {
             msgrcv(args->msqid, (struct msgbuf *)&msg, sizeof(message) - sizeof(long), 1, 0);
 
             if (i == 0) fprintf(f1, "%d %d\n", msg.n_in_chan, msg.n_out_chan);
@@ -322,6 +324,7 @@ void * rt_thread(void * arg) {
     rt_args * args;
     struct timespec ts_target, ts_iter, ts_result, ts_start;
     message msg;
+    message_s_points msg2;
     pthread_t id;
 
     double max_model, min_model, min_abs_model;
@@ -342,7 +345,6 @@ void * rt_thread(void * arg) {
     args = arg;
     msg.c_real = c_real;
 
-
     comedi_t * d;
     Comedi_session session;
     /*int in_channels [] = {0};
@@ -356,13 +358,10 @@ void * rt_thread(void * arg) {
     msg.n_in_chan = args->n_in_chan;
     msg.n_out_chan = args->n_out_chan;
 
-
-
     d = open_device_comedi("/dev/comedi0");
 
     /*Envia el voltage para ver que hace el modelo*/
     session = create_session_comedi(d, AREF_GROUND);
-
 
     prepare_real_time(id);
 
@@ -376,6 +375,7 @@ void * rt_thread(void * arg) {
 		}
 	    calcula_escala (min_abs_model, max_model, min_abs_real, max_real, &scale_virtual_to_real, &scale_real_to_virtual, &offset_virtual_to_real, &offset_real_to_virtual);
     } else {
+        /*MODO SIN ENTRADA*/
     	scale_real_to_virtual = 1;
 	    scale_virtual_to_real = 1;
 	    offset_virtual_to_real = 0;
@@ -385,7 +385,11 @@ void * rt_thread(void * arg) {
     /*CALIBRADO TEMPORAL*/
     double rafaga_viva_pts = args->freq * period_disp_real;
     args->s_points = args->rafaga_modelo_pts / rafaga_viva_pts;
- 
+    msg2.s_points = args->s_points;
+    msg2.id = 1;
+
+    msgsnd(args->msqid, (struct msgbuf *) &msg2, sizeof(message_s_points) - sizeof(long), IPC_NOWAIT);
+
     switch (args->type_syn) {
 		case ELECTRIC:
 			syn_aux_params = NULL;
@@ -419,11 +423,9 @@ void * rt_thread(void * arg) {
         	pthread_exit(NULL);
 	}
 
-
     clock_gettime(CLOCK_MONOTONIC, &ts_target);
     ts_assign (&ts_start,  ts_target);
     ts_add_time(&ts_target, 0, args->period);
-
 
     for (i = 0; i < 5 * args->freq * args->s_points; i++) {
         if (i % args->s_points == 0) {

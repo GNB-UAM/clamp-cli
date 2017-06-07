@@ -48,6 +48,11 @@ typedef struct {
     double ecm; 
 } message;
 
+typedef struct {
+    long id;
+    int s_points;
+} message_s_points;
+
 
 typedef struct {
     void (*func)(int, double, double*, double*, double);
@@ -79,6 +84,7 @@ typedef struct {
     int type_syn;
     int model;
     int period;
+    int freq;
 } writer_args;
 
 void ts_substraction (struct timespec * start, struct timespec * stop, struct timespec * result);
