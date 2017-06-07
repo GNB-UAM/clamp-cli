@@ -134,19 +134,13 @@ int main (int argc, char * argv[]) {
 		}
 	}
 
-
-
-
 	switch (model){
 		case IZHIKEVICH:
 			vars = (double*) malloc (sizeof(double) * 2);
 			params = (double*) malloc (sizeof(double) * 4);
 
-			rafaga_modelo_pts_iz = 59324.0;
-		    pts_por_s = 10000.0;
-		    t_rafaga_viva_s = 0.3;
-		    rafaga_viva_pts = pts_por_s * t_rafaga_viva_s;
-
+			r_args.rafaga_modelo_pts = 59324.0;
+			r_args.dt = 0.001;
 
 			params[I_IZ] = 10.0;
 			params[A_IZ] = 0.02;
@@ -158,9 +152,8 @@ int main (int argc, char * argv[]) {
 			r_args.vars = vars;
 
 			r_args.dim = 2;
-			r_args.s_points = (int) (rafaga_modelo_pts_iz / rafaga_viva_pts);
-			r_args.dt = 0.001;
-
+			r_args.s_points = 0;
+			
 			r_args.func = &izhikevich;
 			r_args.ini = &ini_iz;
 
@@ -169,11 +162,8 @@ int main (int argc, char * argv[]) {
 			vars = (double*) malloc (sizeof(double) * 3);
 			params = (double*) malloc (sizeof(double) * 3);
 
-			rafaga_modelo_pts_hr = 260166.0;
-		    pts_por_s = 10000.0;
-		    t_rafaga_viva_s = 0.4;
-		    rafaga_viva_pts = pts_por_s * t_rafaga_viva_s;
-
+			r_args.rafaga_modelo_pts = 350.0;
+			r_args.dt = 0.001;
 
 			params[I_HR] = 3.0;
 			params[R_HR] = 0.0021;
@@ -183,8 +173,7 @@ int main (int argc, char * argv[]) {
 			r_args.vars = vars;
 
 			r_args.dim = 3;
-			r_args.s_points = (int) (rafaga_modelo_pts_hr / rafaga_viva_pts);
-			r_args.dt = 0.003;
+			r_args.s_points = 0;
 
 			r_args.func = &hindmarsh_rose;
 			r_args.ini = &ini_hr;
@@ -194,10 +183,8 @@ int main (int argc, char * argv[]) {
 			vars = (double*) malloc (sizeof(double) * 2);
 			params = (double*) malloc (sizeof(double) * 8);
 
-			rafaga_modelo_pts_hr = 260166.0;
-		    pts_por_s = 10000.0;
-		    t_rafaga_viva_s = 0.4;
-		    rafaga_viva_pts = pts_por_s * t_rafaga_viva_s;
+			r_args.rafaga_modelo_pts = freq;
+			r_args.dt = 0.003;
 
 			params[I_RLK] = 1.0;
 			params[ALPHA_RLK] = 6.0;
@@ -213,8 +200,7 @@ int main (int argc, char * argv[]) {
 
 			r_args.dim = 2;
 			r_args.s_points = 1;
-			r_args.dt = 0.003;
-
+			
 			r_args.func = &rulkov_map;
 			r_args.ini = &ini_rlk;
 
@@ -273,6 +259,7 @@ int main (int argc, char * argv[]) {
     r_args.points = time_var * freq;
     r_args.period = 1 / freq * NSEC_PER_SEC;
     r_args.type_syn = synapse;
+    r_args.freq = freq;
 
     w_args.filename = filename;
     w_args.points = r_args.points;

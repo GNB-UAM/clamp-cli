@@ -1,7 +1,5 @@
 #include "real_time_functions.h"
 
-
-
 /* TIME MANAGEMENT FUNCTIONS */
 void ts_substraction (struct timespec * start, struct timespec * stop, struct timespec * result) {
     if ((stop->tv_nsec - start->tv_nsec) < 0) {
@@ -73,41 +71,49 @@ void prepare_real_time (pthread_t id) {
 
 /* CALIBRATION FUNCTIONS (MANU) */
 
-int ini_recibido (double *min, double *min_abs, double *max, Comedi_session session, int chan, int period){
+int ini_recibido (double *min, double *min_abs, double *max, double *period_signal, Comedi_session session, int chan, int period, int freq){
     
-    /*Vamos a escanear 10000 puntos durante x segundos para determinar min y max*/
+    /*TIEMPO OBSERVACION*/
+    int segs_observo = 4; 
+
+    /*VARIABLES CALCULO DE RANGOS*/
     int i=0;
     double retval=0.0, valor_old=0.0, resta=0.0, pendiente_max=-999999;
     struct timespec ts_target, ts_iter, ts_result, ts_start;
-    //double bajada_mayor=-999999;
-    //double subida_mayor=-999999;
-
-    int segs_observo=8;    
-
     double maxi=-999999;
     double mini=999999;
     double miniB=999999;
 
+    /*DAQ*/
     int n_channels = 1;
     int in_channels [1];
     double ret_values [1];
-
     in_channels[0] = chan;
 
-
+    /*RT*/
     clock_gettime(CLOCK_MONOTONIC, &ts_target);
     ts_assign (&ts_start,  ts_target);
     ts_add_time(&ts_target, 0, period);
 
+    /*DECLARACIONES DE ARRAYS Y SUS TAMAÑOS*/
+    int size_lectura = freq*segs_observo;
+    double lectura[size_lectura];
+    double convolution[size_lectura];
+    int size_media = size_lectura / 10;
+    double media[size_lectura];
 
-    for (i=0; i<10000*(segs_observo); i++){
+
+    for (i=0; i<freq*(segs_observo); i++){
+
+    	/*LECTURA DE DATOS*/
         clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts_target, NULL);
         if (read_comedi(session, n_channels, in_channels, ret_values) != 0) {
             return -1;
         }
-
         retval = ret_values[0];
+        lectura[i] = retval;
         
+        /*COMPROBAR DATOS*/
         if(retval>maxi){
             maxi=retval;
         }else if(retval<mini){
@@ -116,7 +122,6 @@ int ini_recibido (double *min, double *min_abs, double *max, Comedi_session sess
         
         if(i>2){
             resta=retval-valor_old;
-            
             if(resta>pendiente_max){
                 pendiente_max=resta;
                 miniB=valor_old;
@@ -129,18 +134,76 @@ int ini_recibido (double *min, double *min_abs, double *max, Comedi_session sess
         ts_add_time(&ts_target, 0, period); 
     }
 
+    /*RETURN*/
+    *min_abs = mini;
+    *min = mini*0.7; //0.55
+    *max = maxi;
 
+    /*GUARDAR DATOS LEIDOS*/
+
+    /*PERIODO DE LA SEÑAL*/
+    signal_convolution (lectura, size_lectura, convolution, size_lectura);
+    signal_average (lectura, size_lectura, media, size_media);
+    *period_signal = signal_period (freq, convolution, size_lectura, *min);
+
+    /*PRINTF DEBUG*/
     /*printf("LECTURA INICIAL\n");
     printf("  max_leido=%f ", maxi);
     printf("// min_leido=%f ", mini);
     printf("// min_leido_rel=%f\n\n", mini*0.55);*/
 
-    *min_abs = mini;
-    *min = mini*0.55;
-    *max = maxi;
-    return 1;
+    return OK;
 }
 
+int signal_convolution (double * lectura, int size_l, double * result, int size_r){
+	if(size_l!=size_r)
+		return ERR;
+	int i;
+	for (i=0; i<size_l; i++){
+	  if(i>3){
+        result[i]= 0.2*lectura[i]  + 0.2*lectura[i-1] + 0.2*lectura[i-2] + 0.2*lectura[i-3] + 0.2*lectura[i-4];
+      }
+	}
+	return OK;
+}
+
+int signal_average(double * lectura, int size_l, double * result, int size_r){
+	if (size_r>=size_l)
+		return ERR;
+	int saltar = size_l / size_r;
+	int i, j;
+	for (i=0, j=0; i<size_l; i++, j++){
+		int counter = i+saltar;
+		double sum = 0.0;
+		for(; i<counter; i++){
+			sum += lectura[i];
+		}
+		sum = sum / saltar;
+		result[j] = sum;
+
+	}
+	return OK;
+}
+
+double signal_period(int freq, double * signal, int size, double th){
+	int up=FALSE;
+	if (signal[0]>th)
+		up=TRUE;
+
+	int changes=0, i=0;
+	for (i=0; i<size; i++){
+		if(up==TRUE && signal[i]<th){
+			//Cambio de tendencia
+			changes++;
+			up=FALSE;
+		}else if(up==FALSE && signal[i]>th){
+			up=TRUE;
+		}
+	}
+
+	double period = 1.0 / (changes/freq);
+	return period;
+}
 
 void calcula_escala (double min_virtual, double max_virtual, double min_viva, double max_viva, double *scale_virtual_to_real, double *scale_real_to_virtual, double *offset_virtual_to_real, double *offset_real_to_virtual){
     
@@ -267,20 +330,13 @@ void * rt_thread(void * arg) {
     double scale_virtual_to_real;
     double offset_virtual_to_real;
     double offset_real_to_virtual;
+    double period_disp_real;
 
     double * g_virtual_to_real;
     double * g_real_to_virtual;
     double retval = 0;
     double c_real = 0, c_model = 0;
     double * syn_aux_params;
-
-
-    double rafaga_modelo_pts_hr = 260166.0;
-    double pts_por_s = 10000.0;
-    double t_rafaga_viva_s = 0.4;
-    double rafaga_viva_pts = pts_por_s * t_rafaga_viva_s;
-    
-
 
     id = pthread_self();
     args = arg;
@@ -312,8 +368,9 @@ void * rt_thread(void * arg) {
 
     args->ini(args->vars, &min_model, &min_abs_model, &max_model);
 
+    /*CALIBRADO ESPACIAL-TEMPORAL*/
     if (args->n_in_chan > 0) {
-	    if ( ini_recibido (&min_real, &min_abs_real, &max_real, session, calib_chan, args->period) == -1 ) {
+	    if ( ini_recibido (&min_real, &min_abs_real, &max_real, &period_disp_real, session, calib_chan, args->period, args->freq) == -1 ) {
 			close_device_comedi(d);
 	        pthread_exit(NULL);
 		}
@@ -324,6 +381,10 @@ void * rt_thread(void * arg) {
 	    offset_virtual_to_real = 0;
 	    offset_real_to_virtual = 0;
     }
+
+    /*CALIBRADO TEMPORAL*/
+    double rafaga_viva_pts = args->freq * period_disp_real;
+    args->s_points = args->rafaga_modelo_pts / rafaga_viva_pts;
  
     switch (args->type_syn) {
 		case ELECTRIC:
@@ -364,7 +425,7 @@ void * rt_thread(void * arg) {
     ts_add_time(&ts_target, 0, args->period);
 
 
-    for (i = 0; i < 5 * 10000 * args->s_points; i++) {
+    for (i = 0; i < 5 * args->freq * args->s_points; i++) {
         if (i % args->s_points == 0) {
             clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts_target, NULL);
             clock_gettime(CLOCK_MONOTONIC, &ts_iter);

@@ -14,13 +14,16 @@
 #include "comedi_functions.h"
 #include "model_library.h"
 
-
 #define MAX_SAFE_STACK (8*1024)
 #define PRIORITY (99)
 #define NSEC_PER_SEC (1000000000) /* The number of nsecs per sec. */
 #define MAX_LAT (900000)
 #define CORE (0)
 
+#define ERR -1
+#define OK 0
+#define TRUE 1
+#define FALSE 0
 
 typedef struct {
     long id;
@@ -63,6 +66,8 @@ typedef struct {
     int n_out_chan;
     int * in_channels;
     int * out_channels;
+    int freq;
+    int rafaga_modelo_pts;
 } rt_args;
 
 
@@ -89,3 +94,10 @@ void copy_1d_array (double * src, double * dst, int n_elems);
 void * writer_thread (void * arg);
 
 void * rt_thread (void * arg);
+
+int signal_convolution (double * lectura, int size_l, double * result, int size_r);
+
+int signal_average(double * lectura, int size_l, double * result, int size_r);
+
+double signal_period(int freq, double * signal, int size, double th);
+
