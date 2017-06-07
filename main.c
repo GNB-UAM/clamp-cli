@@ -269,6 +269,7 @@ int main (int argc, char * argv[]) {
     w_args.type_syn = synapse;
     w_args.model = model;
     w_args.freq = freq;
+    w_args.time_var = time_var;
 
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);

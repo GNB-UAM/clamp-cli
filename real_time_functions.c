@@ -289,9 +289,31 @@ void * writer_thread(void * arg) {
     f1 = fopen(filename_1, "w");
     f2 = fopen(filename_2, "w");
     f3 = fopen(filename_3, "a");
+    
+    fprintf(f3, "%s\nModel: ", args->filename);
+    if(args->model==0){
+        fprintf(f3, "Hindmarsh Rose\n");
+    }else if(args->model==1){
+        fprintf(f3, "Izhikevich\n");
+    }else if(args->model==2){
+        fprintf(f3, "Rulkov Map\n");
+    }
 
+    fprintf(f3, "Synapse: ");
+    /*Esto tiene que dar mas detalles de hacia que lado en las quimicas hay de cual*/
+    if(args->type_syn==0){
+        fprintf(f3, "Electric\n");
+    }else if(args->type_syn==1){
+        fprintf(f3, "Chemical\n");
+    }
 
-    fprintf(f3, "%s\nModel: %d\nSynapse: %d\nFreq: %d ns\n\n\n", args->filename, args->model, args->type_syn, args->freq);
+    fprintf(f3, "Freq = %d Hz\n", args->freq);
+
+    fprintf(f3, "Duration = %d s\n", args->time_var);
+
+    fprintf(f3, "\n=================================\n\n");
+
+    //fprintf(f3, "%s\nModel: %d\nSynapse: %d\nFreq: %d ns\n\n\n", args->filename, args->model, args->type_syn, args->freq);
     fclose(f3);
 
     msgrcv(args->msqid, (struct msgbuf *)&msg2, sizeof(message_s_points) - sizeof(long), 1, 0);

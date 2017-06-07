@@ -86,6 +86,7 @@ typedef struct {
     int model;
     int period;
     int freq;
+    int time_var;
 } writer_args;
 
 void ts_substraction (struct timespec * start, struct timespec * stop, struct timespec * result);
