@@ -162,7 +162,7 @@ int main (int argc, char * argv[]) {
 			vars = (double*) malloc (sizeof(double) * 3);
 			params = (double*) malloc (sizeof(double) * 3);
 
-			r_args.rafaga_modelo_pts = 350.0;
+			r_args.rafaga_modelo_pts = 260166.0;
 			r_args.dt = 0.001;
 
 			params[I_HR] = 3.0;
