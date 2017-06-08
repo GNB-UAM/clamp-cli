@@ -118,7 +118,7 @@ int is_syn_by_slope(double val_sin){
 */
 
 double vals_is_syn_by_variance[4] = {-1};
-int num_variances_is_syn_by_variance = 4
+int num_variances_is_syn_by_variance = 4;
 int count_is_syn_by_variance = 0;
 
 int is_syn_by_variance(double val_sin){
