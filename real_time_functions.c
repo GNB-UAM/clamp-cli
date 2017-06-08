@@ -429,6 +429,7 @@ void * rt_thread(void * arg) {
 
     printf("\n - Phase 1 OK\n - Phase 2 START\n\n");
     fflush(stdout);
+    sleep(1);
 
     msgsnd(args->msqid, (struct msgbuf *) &msg2, sizeof(message_s_points) - sizeof(long), IPC_NOWAIT);
 
