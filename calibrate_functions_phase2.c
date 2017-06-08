@@ -89,7 +89,7 @@ double last_val_sin_is_syn_by_slope_1 = -1;
 double last_val_sin_is_syn_by_slope_2 = -1;
 
 int is_syn_by_slope(double val_sin){
-	double tolerance = 0.4;
+	double tolerance = 0.1;
 
 	/*FIRST TIME*/
 	if (last_val_sin_is_syn_by_slope_1 == -1){
@@ -157,6 +157,11 @@ int is_syn_by_variance(double val_sin){
 *			CHANGE PARAMETERS
 *
 **********************************************/
+
+void change_g (double *g){
+	*g+=0.1;
+	return;
+}
 
 
 
