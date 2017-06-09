@@ -31,7 +31,6 @@ int ini_recibido (double *min, double *min_abs, double *max, double *period_sign
     int size_media = size_lectura / 10;
     double media[size_lectura];
 
-
     for (i=0; i<freq*(segs_observo); i++){
 
     	/*LECTURA DE DATOS*/

@@ -74,7 +74,7 @@ void * writer_thread(void * arg) {
         pthread_exit(NULL);
     }
 
-    if (sprintf(filename_2, "%s/summary.txt", args->path) < 0) {
+    if (sprintf(filename_3, "%s/summary.txt", args->path) < 0) {
         printf("Error creating file 2 name\n;");
         pthread_exit(NULL);
     }
@@ -114,18 +114,18 @@ void * writer_thread(void * arg) {
     fprintf(f3, "Calibration mode = %d\n", args->calibration);
 
     msgrcv(args->msqid, (struct msgbuf *)&msg2, sizeof(message_s_points) - sizeof(long), 1, 0);
+    
     s_points = msg2.s_points;
 
-    fprintf(f3, "Puntos saltar = %d\n", s_points);
+    fprintf(f3, "Model jump points = %d\n", s_points);
 
-    fprintf(f3, "Periodo de disparo %d s\n", msg2.period_disp_real);
+    fprintf(f3, "Burst duration = %f s\n", msg2.period_disp_real);
 
     fprintf(f3, "\n=================================\n\n");
 
     //fprintf(f3, "%s\nModel: %d\nSynapse: %d\nFreq: %d ns\n\n\n", args->filename, args->model, args->type_syn, args->freq);
     fclose(f3);
 
-    
     /*****************/
 
     for (i = 0; i < (5 * args->freq + args->points) * s_points; i++) {
@@ -232,6 +232,7 @@ void * rt_thread(void * arg) {
 	    offset_virtual_to_real = 0;
 	    offset_real_to_virtual = 0;
         args->s_points = 1;
+        period_disp_real = 0;
     }
 
     /*CALIBRADO TEMPORAL*/

@@ -109,11 +109,13 @@ int main (int argc, char * argv[]) {
 	r_args.out_channels = NULL;
 	r_args.anti=-1;
 	r_args.calibration=0; 
+	w_args.anti=-1;
+	w_args.calibration=0;
 
     while ((ret = getopt_long(argc, argv, "f:t:m:s:ci:co:h", main_opts, NULL)) >= 0) {
 		switch (ret) {
 		case 'f':
-			freq = atof(optarg) * 10000;
+			freq = atof(optarg) * 1000;
 			break;
 		case 't':
 			time_var = atoi(optarg);

@@ -48,7 +48,9 @@ for j in range(8 + n_in_chan, 8 + n_in_chan + n_out_chan):
 	data_out.append(data[:, j])
 
 
-plt.plot(v_model_scaled)
+plt.plot(v_model_scaled, label="modelo")
+plt.plot(data_in[0], label="viva")
+plt.legend()
 plt.show()
 
 '''
@@ -70,8 +72,6 @@ loop = array[:,5]
 awake = array[:,6]
 sleep = array[:,7]
 '''
-
-
 
 def plot_voltage(n_points, v):
 	plt.plot(t_absol[:n_points], v[:n_points], '-')
@@ -290,9 +290,9 @@ def plot_lat_dist2():
 
 
 #Main
-plot_voltage(len(v_model), v_model)
-plot_voltage(len(data_in[0]), data_in[0])
-plot_voltage(len(data_in[1]), data_in[1])
+#plot_voltage(len(v_model), v_model)
+#plot_voltage(len(data_in[0]), data_in[0])
+#plot_voltage(len(data_in[1]), data_in[1])
 #plot_model_time()
 #plot_iter_time()
 #plot_iter_model_time()
