@@ -23,6 +23,8 @@ struct option main_opts[] = {
 	{"synapse", required_argument, NULL, 's'},
 	{"input_channels", required_argument, NULL, 'i'},
 	{"output_channels", required_argument, NULL, 'o'},
+	{"calibration", required_argument, NULL, 'c'},
+	{"antiphase", no_argument, NULL, 'a'},
 	{"help", no_argument, NULL, 'h'},
 	{0},
 };
@@ -36,10 +38,10 @@ void do_print_usage ()
 	printf("\t\t -s, --synapse: synapse type (0 = electrical, 1 = gradual)\n");
 	printf("\t\t -i, --input_channels: input channels, separated by commas (ej: 0,2,3,7)\n");
 	printf("\t\t -o, --output_channels: output channels, separated by commas (ej: 0,2,3,7)\n");
+	printf("\t\t -c, --calibration: automatic calibration process\n");
+	printf("\t\t -a, --antiphase: turn on antiphase\n");
 	printf("\t\t -h, --help: print this help\n");
 }
-
-
 
 void parse_channels (char * str, int ** channels, int * n_chan) {
 	int n_chan_aux = 0;
@@ -105,12 +107,13 @@ int main (int argc, char * argv[]) {
 	r_args.n_out_chan = 0;
 	r_args.in_channels = NULL;
 	r_args.out_channels = NULL;
-
+	r_args.anti=-1;
+	r_args.calibration=0; 
 
     while ((ret = getopt_long(argc, argv, "f:t:m:s:ci:co:h", main_opts, NULL)) >= 0) {
 		switch (ret) {
 		case 'f':
-			freq = atof(optarg);
+			freq = atof(optarg) * 10000;
 			break;
 		case 't':
 			time_var = atoi(optarg);
@@ -126,6 +129,14 @@ int main (int argc, char * argv[]) {
 			break;
 		case 'o':
 			parse_channels(optarg, &(r_args.out_channels), &(r_args.n_out_chan));
+			break;
+		case 'a':
+			r_args.anti=1;
+			w_args.anti=1;
+			break;
+		case 'c':
+			r_args.calibration = atoi(optarg);
+			w_args.calibration = atoi(optarg);
 			break;
 		case 'h':
 		default:
@@ -262,6 +273,7 @@ int main (int argc, char * argv[]) {
     r_args.freq = freq;
     r_args.filename = filename;
 
+    w_args.path = path;
     w_args.filename = filename;
     w_args.points = r_args.points;
     w_args.s_points = r_args.s_points;

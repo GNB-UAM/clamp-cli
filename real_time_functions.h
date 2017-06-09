@@ -11,12 +11,14 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <getopt.h>
-#include "comedi_functions.h"
+#include "time_management.h"
+//#include "comedi_functions.h"
 #include "model_library.h"
+#include "calibrate_functions_phase1.h"
+#include "calibrate_functions_phase2.h"
 
 #define MAX_SAFE_STACK (8*1024)
 #define PRIORITY (99)
-#define NSEC_PER_SEC (1000000000) /* The number of nsecs per sec. */
 #define MAX_LAT (900000)
 #define CORE (0)
 
@@ -51,6 +53,7 @@ typedef struct {
 typedef struct {
     long id;
     int s_points;
+    double period_disp_real;
 } message_s_points;
 
 
@@ -74,11 +77,14 @@ typedef struct {
     int freq;
     int rafaga_modelo_pts;
     char * filename;
+    int calibration;
+    int anti;
 } rt_args;
 
 
 typedef struct {
     char * filename;
+    char * path;
     int msqid;
     long points;
     int s_points;
@@ -87,6 +93,8 @@ typedef struct {
     int period;
     int freq;
     int time_var;
+    int calibration;
+    int anti;
 } writer_args;
 
 void ts_substraction (struct timespec * start, struct timespec * stop, struct timespec * result);

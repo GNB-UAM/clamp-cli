@@ -41,10 +41,70 @@ int calc_ecm (double v_a, double v_b, int life_burst_points, double *ecm_result)
 
 /*
 */
-int calc_phase (double v_a, double v_b, double *phase_result){
+int calc_phase (double * v_a, double * t_a, double * v_b, double * t_b, int size, double th_up, double th_on, double * result){
+
+	int up_a=FALSE, up_b=FALSE;
+	int size_res = 50;
+	double res_a[50] = {0};
+	double res_b[50] = {0};
+	double res[50] = {0};
+	int count_a=0, count_b=0, i=0;
+	if(v_a[0]>th_up)
+		up_a=TRUE;
+	if(v_b[0]>th_up)
+		up_b=TRUE;
+
+	for(i=0; i<size; i++){
+		//A
+		if (up_a==FALSE && v_a[i]>th_up){
+			up_a=TRUE;
+			//Apuntamos tiempo de disparo
+			res_a[count_a]=t_a[i];
+			count_a++;
+		}else if (up_a==TRUE && v_a[i]<th_on){
+			up_a=FALSE;
+		}
+
+		//B
+		if (up_b==FALSE && v_b[i]>th_up){
+			up_b=TRUE;
+			//Apuntamos tiempo de disparo
+			res_b[count_b]=t_b[i];
+			count_b++;
+		}else if (up_b==TRUE && v_b[i]<th_on){
+			up_b=FALSE;
+		}
+	}
+
+	//res a y b incluyen los tiempos de disparo
+	int count=0;
+	for(i=0; i<size_res; i++){
+		if (res_a[i]==0){
+			break;
+		}
+		res[i] = fabs(res_a[i] - res_b[i]);
+		count++;
+	}
+
+	//Calculamos varianza
+	double media = 0;
+	for(i=0; i<count; i++){
+		media+=res[i];
+	}
+	media = media / count;
+
+	double var=0, tmp=0;
+
+	for(i=0; i<count; i++){
+		tmp = res[i] - media;
+		var += tmp*tmp;
+	}
+
+	var = var / count;
+
+	*result = var;
 
 	return 1;
-
 }
 
 /**********************************************
@@ -121,7 +181,7 @@ double vals_is_syn_by_variance[4] = {-1};
 int num_variances_is_syn_by_variance = 4;
 int count_is_syn_by_variance = 0;
 
-int is_syn_by_variance(double val_sin){
+int is_syn_by_variance(double val_sin, double * var){
 	double tolerance = 0.1;
 
 	vals_is_syn_by_variance[count_is_syn_by_variance % num_variances_is_syn_by_variance] = val_sin;
@@ -144,6 +204,7 @@ int is_syn_by_variance(double val_sin){
 		res += tmp * tmp;
 	}
 	res = res / num_variances_is_syn_by_variance;
+	*var = res;
 
 	if (res<=tolerance){
 		return TRUE;

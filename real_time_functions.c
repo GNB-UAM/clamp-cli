@@ -1,37 +1,5 @@
 #include "real_time_functions.h"
 
-/* TIME MANAGEMENT FUNCTIONS */
-void ts_substraction (struct timespec * start, struct timespec * stop, struct timespec * result) {
-    if ((stop->tv_nsec - start->tv_nsec) < 0) {
-        result->tv_sec = stop->tv_sec - start->tv_sec - 1;
-        result->tv_nsec = stop->tv_nsec - start->tv_nsec + 1000000000;
-    } else {
-        result->tv_sec = stop->tv_sec - start->tv_sec;
-        result->tv_nsec = stop->tv_nsec - start->tv_nsec;
-    }
-
-    return;
-}
-
-
-void ts_assign (struct timespec * ts1,  struct timespec ts2) {
-    ts1->tv_sec = ts2.tv_sec;
-    ts1->tv_nsec = ts2.tv_nsec;
-}
-
-
-void ts_add_time (struct timespec * ts, int sec, int nsec) {
-    ts->tv_nsec += nsec;
-
-    while (ts->tv_nsec >= NSEC_PER_SEC) {
-          ts->tv_nsec -= NSEC_PER_SEC;
-          ts->tv_sec++;
-    }
-
-    ts->tv_sec += sec;
-}
-
-
 /*REAL-TIME FUNCTIONS */
 void prepare_real_time (pthread_t id) {
 	struct sched_param param;
@@ -67,184 +35,6 @@ void prepare_real_time (pthread_t id) {
     return;
 }
 
-
-
-/* CALIBRATION FUNCTIONS (MANU) */
-
-int ini_recibido (double *min, double *min_abs, double *max, double *period_signal, Comedi_session session, int chan, int period, int freq, char* filename){
-    
-    /*TIEMPO OBSERVACION*/
-    int segs_observo = 4; 
-
-    /*VARIABLES CALCULO DE RANGOS*/
-    int i=0;
-    double retval=0.0, valor_old=0.0, resta=0.0, pendiente_max=-999999;
-    struct timespec ts_target, ts_iter, ts_result, ts_start;
-    double maxi=-999999;
-    double mini=999999;
-    double miniB=999999;
-
-    /*DAQ*/
-    int n_channels = 1;
-    int in_channels [1];
-    double ret_values [1];
-    in_channels[0] = chan;
-
-    /*RT*/
-    clock_gettime(CLOCK_MONOTONIC, &ts_target);
-    ts_assign (&ts_start,  ts_target);
-    ts_add_time(&ts_target, 0, period);
-
-    /*DECLARACIONES DE ARRAYS Y SUS TAMAÑOS*/
-    int size_lectura = freq*segs_observo;
-    double lectura[size_lectura];
-    double convolution[size_lectura];
-    int size_media = size_lectura / 10;
-    double media[size_lectura];
-
-
-    for (i=0; i<freq*(segs_observo); i++){
-
-    	/*LECTURA DE DATOS*/
-        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts_target, NULL);
-        if (read_comedi(session, n_channels, in_channels, ret_values) != 0) {
-            return -1;
-        }
-        retval = ret_values[0];
-        lectura[i] = retval;
-        
-        /*COMPROBAR DATOS*/
-        if(retval>maxi){
-            maxi=retval;
-        }else if(retval<mini){
-            mini=retval;
-        }
-        
-        if(i>2){
-            resta=retval-valor_old;
-            if(resta>pendiente_max){
-                pendiente_max=resta;
-                miniB=valor_old;
-            }
-        }
-        
-        if(i%10==0)
-            valor_old=retval;
-
-        ts_add_time(&ts_target, 0, period); 
-    }
-
-    /*RETURN*/
-    *min_abs = mini;
-    *min = mini*0.7; //0.55
-    *max = maxi;
-
-    /*GUARDAR DATOS LEIDOS*/
-
-    /*PERIODO DE LA SEÑAL*/
-    signal_convolution (lectura, size_lectura, convolution, size_lectura);
-    signal_average (lectura, size_lectura, media, size_media);
-    *period_signal = signal_period (segs_observo, convolution, size_lectura, *min);
-    //printf("Perido signal = %f\n", *period_signal);
-    array_to_file(lectura, size_lectura, filename, "lectura_ini");
-    array_to_file(convolution, size_lectura, filename, "lectura_ini_filtro");
-
-    /*PRINTF DEBUG*/
-    /*printf("LECTURA INICIAL\n");
-    printf("  max_leido=%f ", maxi);
-    printf("// min_leido=%f ", mini);
-    printf("// min_leido_rel=%f\n\n", mini*0.55);*/
-
-    return OK;
-}
-
-int signal_convolution (double * lectura, int size_l, double * result, int size_r){
-	if(size_l!=size_r)
-		return ERR;
-	int i;
-	for (i=0; i<size_l; i++){
-	  if(i>3){
-        result[i]= 0.2*lectura[i]  + 0.2*lectura[i-1] + 0.2*lectura[i-2] + 0.2*lectura[i-3] + 0.2*lectura[i-4];
-      }else{
-        result[i]=lectura[i];
-      }
-	}
-	return OK;
-}
-
-int signal_average(double * lectura, int size_l, double * result, int size_r){
-	if (size_r>=size_l)
-		return ERR;
-	int saltar = size_l / size_r;
-	int i, j;
-	for (i=0, j=0; i<size_l; i++, j++){
-		int counter = i+saltar;
-		double sum = 0.0;
-		for(; i<counter; i++){
-			sum += lectura[i];
-		}
-		sum = sum / saltar;
-		result[j] = sum;
-
-	}
-	return OK;
-}
-
-double signal_period(int seg_observacion, double * signal, int size, double th){
-	int up=FALSE;
-	if (signal[0]>th)
-		up=TRUE;
-
-	int changes=0, i=0;
-	for (i=0; i<size; i++){
-		if(up==TRUE && signal[i]<th){
-			//Cambio de tendencia
-			changes++;
-			up=FALSE;
-		}else if(up==FALSE && signal[i]>th){
-			up=TRUE;
-		}
-	}
-	double period = 1.0 / (changes/seg_observacion);
-	return period;
-}
-
-void array_to_file(double * array, int size, char * filename_date, char * tittle){
-    FILE * f;
-    char filename[100];
-    sprintf(filename, "%s_%s.txt", filename_date, tittle);
-    f = fopen(filename, "w");
-    int i;
-
-    for(i=0; i<size; i++){
-        fprintf(f, "%f\n", array[i]);
-    }
-
-    fflush(f);
-    fclose(f);
-    sleep(1);
-    return;
-}
-
-void calcula_escala (double min_virtual, double max_virtual, double min_viva, double max_viva, double *scale_virtual_to_real, double *scale_real_to_virtual, double *offset_virtual_to_real, double *offset_real_to_virtual){
-    
-    double rg_virtual, rg_viva;
-    
-    rg_virtual = max_virtual-min_virtual;
-    rg_viva = max_viva-min_viva;
-    
-    //printf("rg_virtual=%f, rg_viva=%f\n", rg_virtual, rg_viva);
-    
-    *scale_virtual_to_real = rg_viva / rg_virtual;
-    *scale_real_to_virtual = rg_virtual / rg_viva;
-    
-    *offset_virtual_to_real = min_viva - (min_virtual*(*scale_virtual_to_real));
-    *offset_real_to_virtual = min_virtual - (min_viva*(*scale_real_to_virtual));
-
-    //printf("ESCALAS CALCULADAS\n\n");
-    return;
-}
-
 /* THREADS FUNCTIONS */
 
 void copy_1d_array (double * src, double * dst, int n_elems) {
@@ -272,7 +62,7 @@ void * writer_thread(void * arg) {
 
     char filename_1 [strlen(args->filename) + 6];
     char filename_2 [strlen(args->filename) + 6];
-    char * filename_3 = "data/summary.txt";
+    char filename_3 [strlen(args->path) + 12];
 
     if (sprintf(filename_1, "%s_1.txt", args->filename) < 0) {
         printf("Error creating file 1 name\n;");
@@ -284,6 +74,10 @@ void * writer_thread(void * arg) {
         pthread_exit(NULL);
     }
 
+    if (sprintf(filename_2, "%s/summary.txt", args->path) < 0) {
+        printf("Error creating file 2 name\n;");
+        pthread_exit(NULL);
+    }
 
     umask(1);
     f1 = fopen(filename_1, "w");
@@ -311,14 +105,28 @@ void * writer_thread(void * arg) {
 
     fprintf(f3, "Duration = %d s\n", args->time_var);
 
+    if(args->anti==1){
+        fprintf(f3, "Antiphase = True\n");
+    }else{
+        fprintf(f3, "Antiphase = False\n");
+    }
+
+    fprintf(f3, "Calibration mode = %d\n", args->calibration);
+
+    msgrcv(args->msqid, (struct msgbuf *)&msg2, sizeof(message_s_points) - sizeof(long), 1, 0);
+    s_points = msg2.s_points;
+
+    fprintf(f3, "Puntos saltar = %d\n", s_points);
+
+    fprintf(f3, "Periodo de disparo %d s\n", msg2.period_disp_real);
+
     fprintf(f3, "\n=================================\n\n");
 
     //fprintf(f3, "%s\nModel: %d\nSynapse: %d\nFreq: %d ns\n\n\n", args->filename, args->model, args->type_syn, args->freq);
     fclose(f3);
 
-    msgrcv(args->msqid, (struct msgbuf *)&msg2, sizeof(message_s_points) - sizeof(long), 1, 0);
-    s_points = msg2.s_points;
     
+    /*****************/
 
     for (i = 0; i < (5 * args->freq + args->points) * s_points; i++) {
         if (i % s_points == 0) {
@@ -373,6 +181,7 @@ void * rt_thread(void * arg) {
     double offset_virtual_to_real;
     double offset_real_to_virtual;
     double period_disp_real;
+    double rafaga_viva_pts;
 
     double * g_virtual_to_real;
     double * g_real_to_virtual;
@@ -406,6 +215,7 @@ void * rt_thread(void * arg) {
 
     args->ini(args->vars, &min_model, &min_abs_model, &max_model);
 
+
     /*CALIBRADO ESPACIAL-TEMPORAL*/
     if (args->n_in_chan > 0) {
 	    if ( ini_recibido (&min_real, &min_abs_real, &max_real, &period_disp_real, session, calib_chan, args->period, args->freq, args->filename) == -1 ) {
@@ -413,25 +223,27 @@ void * rt_thread(void * arg) {
 	        pthread_exit(NULL);
 		}
 	    calcula_escala (min_abs_model, max_model, min_abs_real, max_real, &scale_virtual_to_real, &scale_real_to_virtual, &offset_virtual_to_real, &offset_real_to_virtual);
+        rafaga_viva_pts = args->freq * period_disp_real;
+        args->s_points = args->rafaga_modelo_pts / rafaga_viva_pts;
     } else {
         /*MODO SIN ENTRADA*/
     	scale_real_to_virtual = 1;
 	    scale_virtual_to_real = 1;
 	    offset_virtual_to_real = 0;
 	    offset_real_to_virtual = 0;
+        args->s_points = 1;
     }
 
     /*CALIBRADO TEMPORAL*/
-    double rafaga_viva_pts = args->freq * period_disp_real;
-    args->s_points = args->rafaga_modelo_pts / rafaga_viva_pts;
     msg2.s_points = args->s_points;
+    msg2.period_disp_real = period_disp_real;
     msg2.id = 1;
+    msgsnd(args->msqid, (struct msgbuf *) &msg2, sizeof(message_s_points) - sizeof(long), IPC_NOWAIT);
 
     printf("\n - Phase 1 OK\n - Phase 2 START\n\n");
     fflush(stdout);
     sleep(1);
 
-    msgsnd(args->msqid, (struct msgbuf *) &msg2, sizeof(message_s_points) - sizeof(long), IPC_NOWAIT);
 
     switch (args->type_syn) {
 		case ELECTRIC:
@@ -558,6 +370,10 @@ void * rt_thread(void * arg) {
             ts_add_time(&ts_target, 0, args->period);
 
             if (read_comedi(session, args->n_in_chan, args->in_channels, ret_values) != 0) {
+                for (i = 0; i < args->n_out_chan; i++) {
+                    out_values[i] = 0;
+                }
+                write_comedi(session, args->n_out_chan, args->out_channels, out_values);
                 close_device_comedi(d);
                 free(syn_aux_params);
                 free(g_virtual_to_real);
@@ -570,17 +386,15 @@ void * rt_thread(void * arg) {
 
          
         args->syn(ret_values[0] * scale_real_to_virtual + offset_real_to_virtual, args->vars[0], g_real_to_virtual, &c_real, syn_aux_params);
-        msg.c_real = c_real;
+        msg.c_real = c_real * scale_virtual_to_real + offset_virtual_to_real;
 
-        args->func(args->dim, args->dt, args->vars, args->params, -c_real);
+        args->func(args->dim, args->dt, args->vars, args->params, args->anti*c_real);
     }
 
     for (i = 0; i < args->n_out_chan; i++) {
     	out_values[i] = 0;
     }
-
     write_comedi(session, args->n_out_chan, args->out_channels, out_values);
-
     close_device_comedi(d);
     free(syn_aux_params);
     free(g_virtual_to_real);
