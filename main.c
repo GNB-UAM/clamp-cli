@@ -81,6 +81,7 @@ int main (int argc, char * argv[]) {
 	time_t t;
 	struct tm tm;
 	char path [18];
+	char path_b [18];
 	char hour [12];
 	char filename [22];
 
@@ -249,10 +250,10 @@ int main (int argc, char * argv[]) {
         return(0);
     }
 
-
     t = time(NULL);
 	tm = *localtime(&t);
 	sprintf(path, "data/%dy_%dm_%dd", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+	sprintf(path_b, "data/%dy_%dm_%dd", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
 
 	filename[0] = '\0';
 	strcat(filename, path);
@@ -265,8 +266,9 @@ int main (int argc, char * argv[]) {
 	}
 
 	sprintf(hour, "/%dh_%dm_%ds", tm.tm_hour, tm.tm_min, tm.tm_sec);
-	strcat(filename, hour);
-        
+	strcat(filename, hour);  
+
+	printf(" - File:\n%s%s\n", filename, "_1.txt");
 
     r_args.msqid = msqid;
     r_args.points = time_var * freq;
@@ -275,7 +277,7 @@ int main (int argc, char * argv[]) {
     r_args.freq = freq;
     r_args.filename = filename;
 
-    w_args.path = path;
+    w_args.path = path_b;
     w_args.filename = filename;
     w_args.points = r_args.points;
     w_args.s_points = r_args.s_points;
@@ -288,8 +290,6 @@ int main (int argc, char * argv[]) {
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
-
-
     err = pthread_create(&(writer), &attr, &writer_thread, (void *) &w_args);
     if (err != 0)
         printf("Can't create thread :[%s]", strerror(err));
@@ -297,9 +297,6 @@ int main (int argc, char * argv[]) {
     err = pthread_create(&(rt), &attr, &rt_thread, (void *) &r_args);
     if (err != 0)
         printf("Can't create thread :[%s]", strerror(err));
-
-    
-
 
     pthread_join(rt, NULL);
     pthread_join(writer, NULL);

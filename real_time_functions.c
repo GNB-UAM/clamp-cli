@@ -333,44 +333,54 @@ void * rt_thread(void * arg) {
     }
 
     for (i = 0; i < args->points * args->s_points; i++) {
+        /*TOCA INTERACCION*/
         if (i % args->s_points == 0) {
+            
+            /*ESPERA HASTA EL MOMENTO DETERMINADO*/
             clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts_target, NULL);
             clock_gettime(CLOCK_MONOTONIC, &ts_iter);
-
             ts_substraction(&ts_target, &ts_iter, &ts_result);
+
+            /*GUARDAR INFO*/
             msg.id = 1;
             msg.i = i;
             msg.v_model_scaled = args->vars[0] * scale_virtual_to_real + offset_virtual_to_real;
             msg.v_model = args->vars[0];
             msg.lat = ts_result.tv_sec * NSEC_PER_SEC + ts_result.tv_nsec;
 
+            /*SINAPSIS Y CORRIENTE EN VIRTUAL TO REAL*/
             args->syn(args->vars[0] * scale_virtual_to_real + offset_virtual_to_real, ret_values[0], g_virtual_to_real, &c_model, syn_aux_params);
             msg.c_model = c_model;
 
-
+            /*GUARDAR INFO*/
             ts_substraction(&ts_start, &ts_iter, &ts_result);
             msg.t_absol = (ts_result.tv_sec * NSEC_PER_SEC + ts_result.tv_nsec) * 0.000001;
             msg.t_unix = (ts_iter.tv_sec * NSEC_PER_SEC + ts_iter.tv_nsec) * 0.000001;
 
+            /*ENVIO POR LA TARJETA*/
             out_values[0] = c_model;
             out_values[1] = msg.v_model_scaled;
 
+            /*GUARDAR INFO*/
             msg.g_real_to_virtual = g_real_to_virtual;
             msg.g_virtual_to_real = g_virtual_to_real;
-
             msg.data_in = (double *) malloc (sizeof(double) * args->n_in_chan);
             msg.data_out = (double *) malloc (sizeof(double) * args->n_out_chan);
-
             copy_1d_array(ret_values, msg.data_in, args->n_in_chan);
             copy_1d_array(out_values, msg.data_out, args->n_out_chan);
 
+            /*ENVIO POR LA TARJETA*/
             write_comedi(session, args->n_out_chan, args->out_channels, out_values);
 
+            /*GUARDAR INFO*/
             msgsnd(args->msqid, (struct msgbuf *) &msg, sizeof(message) - sizeof(long), IPC_NOWAIT);
 
+            /*TIEMPO*/
             ts_add_time(&ts_target, 0, args->period);
 
+            /*LECTURA DE LA TARJETA*/
             if (read_comedi(session, args->n_in_chan, args->in_channels, ret_values) != 0) {
+                /*ALGO FALLO*/
                 for (i = 0; i < args->n_out_chan; i++) {
                     out_values[i] = 0;
                 }
@@ -385,10 +395,9 @@ void * rt_thread(void * arg) {
             }
         }
 
-         
+        /*CALCULO CORRIENTE E INTEGRACIÓN DEL MODELO*/ 
         args->syn(ret_values[0] * scale_real_to_virtual + offset_real_to_virtual, args->vars[0], g_real_to_virtual, &c_real, syn_aux_params);
         msg.c_real = c_real * scale_virtual_to_real + offset_virtual_to_real;
-
         args->func(args->dim, args->dt, args->vars, args->params, args->anti*c_real);
     }
 
