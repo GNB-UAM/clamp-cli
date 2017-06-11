@@ -14,6 +14,17 @@ ap.add_argument("-t", "--title", required=True,
 	help="title")
 args = vars(ap.parse_args())
 
+##### FICHERO 1
+dataset = pd.read_csv(args["file"]+"_1.txt", delimiter=' ', header=1)
+array = dataset.values
+data = array[1:,:]
+
+t = t_absol = data[:,1] / 1000
+v_model_scaled = data[:, 5]
+v_live = data[:, 8]
+
+##### FICHERO 2
+
 dataset = pd.read_csv(args["file"]+"_2.txt", delimiter=' ', header=None)
 array = dataset.values
 
@@ -22,7 +33,23 @@ index = array[:,1]
 ecm = array[:,2]
 g0 = array[:,3]
 
-plt.plot(time, ecm, label="ECM")
-plt.title(args["title"])
-plt.legend()
+f, axarr = plt.subplots(3, sharex=True, figsize=(12,6))
+
+axarr[0].plot(t, v_model_scaled, label="Modelo", linewidth=0.4)
+axarr[0].plot(t, v_live, label="Viva", linewidth=0.4)
+axarr[0].set_title("Voltaje")
+axarr[0].legend()
+
+axarr[1].plot(time, ecm)
+axarr[1].set_title("ECM")
+axarr[1].axhline(y=47.55, color='r', linestyle='--', linewidth=0.4, label="ECM medio inicial")
+axarr[1].axhline(y=19.00, color='g', linestyle='--', linewidth=0.4, label="ECM objetivo")
+axarr[1].legend()
+
+axarr[2].plot(time, g0)
+axarr[2].set_title("Conductancia")
+axarr[2].legend()
+
+plt.xlabel("Tiempo (s)")
+plt.tight_layout()
 plt.show()

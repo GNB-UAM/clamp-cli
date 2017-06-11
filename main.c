@@ -38,8 +38,8 @@ void do_print_usage ()
 	printf("\t\t -s, --synapse: synapse type (0 = electrical, 1 = gradual)\n");
 	printf("\t\t -i, --input_channels: input channels, separated by commas (ej: 0,2,3,7)\n");
 	printf("\t\t -o, --output_channels: output channels, separated by commas (ej: 0,2,3,7)\n");
-	printf("\t\t -c, --calibration: automatic calibration process (dont use with antiphase)\n");
 	printf("\t\t -a, --antiphase: turn on antiphase\n");
+	printf("\t\t -c, --calibration: automatic calibration process\n\t\t\t - Don't use with antiphase\n\t\t\t - Synapse will be ignored\n \t\t\t - Codes in Readme or github\n");
 	printf("\t\t -h, --help: print this help\n");
 }
 
@@ -145,13 +145,12 @@ int main (int argc, char * argv[]) {
 		case 'c':
 			mode_auto_cal = atoi(optarg);
 			if (mode_auto_cal == 1){
-				//Electrica en fase
+				//Electrica en fase - ecm y %
+				synapse=0;
 				r_args.anti=-1;
 				w_args.anti=-1;
 			}else if(mode_auto_cal == 2){
-				//Electrica en anti
-				r_args.anti=1;
-				w_args.anti=1;
+				
 			}
 			if(!c_a){
 				c_a=TRUE;

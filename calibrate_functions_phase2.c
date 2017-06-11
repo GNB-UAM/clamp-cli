@@ -23,7 +23,7 @@ int count_a_calc_ecm = 0;
 double ecm_calc_ecm =0;
 
 int calc_ecm (double v_a, double v_b, int life_burst_points, double *ecm_result){
-	int num_burst = 3;
+	int num_burst = 2;
 	double diff = 0;
 
 	if(count_a_calc_ecm<life_burst_points*num_burst){
@@ -116,15 +116,20 @@ int calc_phase (double * v_a, double * t_a, double * v_b, double * t_b, int size
 double first_val_is_syn_by_percentage = -1;
 int count_is_syn_by_percentage = 0; 
 
+void set_is_syn_by_percentage(double val_sin){
+	printf("ECM_inicial = %f\n", val_sin);
+	first_val_is_syn_by_percentage = val_sin;
+	printf("ECM_objetivo = %f\n", val_sin*0.4);
+	count_is_syn_by_percentage = 0;
+}
+
 int is_syn_by_percentage(double val_sin){
 	double percentage = 0.4;
 	int times_correct = 2;
 	
 	/*FIRST TIME*/
 	if (first_val_is_syn_by_percentage == -1){
-		first_val_is_syn_by_percentage = val_sin;
-		count_is_syn_by_percentage = 0;
-		return FALSE;
+		return ERR;
 	}
     /*PERCENTAGE REACHED*/
 	else if (first_val_is_syn_by_percentage*percentage>val_sin){

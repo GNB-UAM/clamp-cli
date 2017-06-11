@@ -85,9 +85,9 @@ void * writer_thread(void * arg) {
     f3 = fopen(filename_3, "a");
     
     fprintf(f3, "%s\nModel: ", args->filename);
-    if(args->model==0){
+    if(args->model==1){
         fprintf(f3, "Hindmarsh Rose\n");
-    }else if(args->model==1){
+    }else if(args->model==0){
         fprintf(f3, "Izhikevich\n");
     }else if(args->model==2){
         fprintf(f3, "Rulkov Map\n");
@@ -288,7 +288,11 @@ void * rt_thread(void * arg) {
     ts_assign (&ts_start,  ts_target);
     ts_add_time(&ts_target, 0, args->period);
 
-    for (i = 0; i < 5 * args->freq * args->s_points; i++) {
+    double sum_ecm;
+    int t_obs=5;
+    int sum_ecm_cont=0;
+
+    for (i = 0; i < t_obs * args->freq * args->s_points; i++) {
         if (i % args->s_points == 0) {
             clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts_target, NULL);
             clock_gettime(CLOCK_MONOTONIC, &ts_iter);
@@ -322,7 +326,10 @@ void * rt_thread(void * arg) {
                 //Electrica en fase
                 int ret_ecm = calc_ecm(args->vars[0] * scale_virtual_to_real + offset_virtual_to_real, ret_values[0], rafaga_viva_pts, &ecm_result);
                 msg.ecm = ecm_result;
-
+                if(ecm_result!=0){
+                    sum_ecm+=ecm_result;
+                    sum_ecm_cont++;
+                }
             }
 
             msg.g_real_to_virtual = g_real_to_virtual;
@@ -346,6 +353,10 @@ void * rt_thread(void * arg) {
         args->func(args->dim, args->dt, args->vars, args->params, c_real);
     }
 
+    if(args->calibration == 1){
+        sum_ecm = sum_ecm / sum_ecm_cont;
+        set_is_syn_by_percentage(sum_ecm);
+    }
     int cal_on = TRUE;
 
     for (i = 0; i < args->points * args->s_points; i++) {
