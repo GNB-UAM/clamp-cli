@@ -38,7 +38,7 @@ void do_print_usage ()
 	printf("\t\t -s, --synapse: synapse type (0 = electrical, 1 = gradual)\n");
 	printf("\t\t -i, --input_channels: input channels, separated by commas (ej: 0,2,3,7)\n");
 	printf("\t\t -o, --output_channels: output channels, separated by commas (ej: 0,2,3,7)\n");
-	printf("\t\t -c, --calibration: automatic calibration process\n");
+	printf("\t\t -c, --calibration: automatic calibration process (dont use with antiphase)\n");
 	printf("\t\t -a, --antiphase: turn on antiphase\n");
 	printf("\t\t -h, --help: print this help\n");
 }
@@ -103,15 +103,14 @@ int main (int argc, char * argv[]) {
 	double freq = 10000.0;
 	int time_var = 0;
 	int ret = 0;
+	int mode_auto_cal=0;
 
 	r_args.n_in_chan = 0;
 	r_args.n_out_chan = 0;
 	r_args.in_channels = NULL;
 	r_args.out_channels = NULL;
 	r_args.anti=-1;
-	r_args.calibration=0; 
 	w_args.anti=-1;
-	w_args.calibration=0;
 
     while ((ret = getopt_long(argc, argv, "f:t:m:s:ci:co:h", main_opts, NULL)) >= 0) {
 		switch (ret) {
@@ -138,8 +137,17 @@ int main (int argc, char * argv[]) {
 			w_args.anti=1;
 			break;
 		case 'c':
-			r_args.calibration = atoi(optarg);
-			w_args.calibration = atoi(optarg);
+			mode_auto_cal = atoi(optarg);
+			if (mode_auto_cal == 1){
+				//Electrica en fase
+				r_args.anti=-1;
+				w_args.anti=-1;
+			}else if(mode_auto_cal == 2){
+				//Electrica en anti
+				r_args.anti=1;
+				w_args.anti=1;
+			}
+			
 			break;
 		case 'h':
 		default:
@@ -147,6 +155,9 @@ int main (int argc, char * argv[]) {
 			return 0;
 		}
 	}
+
+	r_args.calibration = mode_auto_cal;
+	w_args.calibration = mode_auto_cal;
 
 	switch (model){
 		case IZHIKEVICH:

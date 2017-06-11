@@ -167,7 +167,7 @@ void * writer_thread(void * arg) {
 
 
 void * rt_thread(void * arg) {
-    int i;
+    int i, cont_send=0;
     rt_args * args;
     struct timespec ts_target, ts_iter, ts_result, ts_start;
     message msg;
@@ -343,7 +343,8 @@ void * rt_thread(void * arg) {
 
             /*GUARDAR INFO*/
             msg.id = 1;
-            msg.i = i;
+            msg.i = cont_send;
+            cont_send++;
             msg.v_model_scaled = args->vars[0] * scale_virtual_to_real + offset_virtual_to_real;
             msg.v_model = args->vars[0];
             msg.lat = ts_result.tv_sec * NSEC_PER_SEC + ts_result.tv_nsec;
