@@ -144,16 +144,15 @@ void * writer_thread(void * arg) {
             for (j = 0; j < msg.n_out_chan; ++j) {
                 fprintf(f1, " %f", msg.data_out[j]);
             }
-
             fprintf(f1, "\n");
 
+            fprintf(f2, " %f", msg.ecm);
             for (j = 0; j < msg.n_g; ++j) {
                 fprintf(f2, " %f", msg.g_real_to_virtual[j]);
                 fprintf(f2, " %f", msg.g_virtual_to_real[j]);
             }
-
-
             fprintf(f2, "\n");
+            
             free(msg.data_in);
             free(msg.data_out);
         }
@@ -188,6 +187,8 @@ void * rt_thread(void * arg) {
     double retval = 0;
     double c_real = 0, c_model = 0;
     double * syn_aux_params;
+
+    double ecm_result = 0;
 
     id = pthread_self();
     args = arg;
@@ -254,6 +255,10 @@ void * rt_thread(void * arg) {
     		g_real_to_virtual = (double *) malloc (sizeof(double) * 1);
 			g_virtual_to_real[0] = 0.3;
     		g_real_to_virtual[0] = 0.3;
+            if(args->calibration == 1){
+                g_virtual_to_real[0] = 0.0;
+                g_real_to_virtual[0] = 0.0;
+            }
     		msg.n_g = 1;
 
 			break;
@@ -290,7 +295,8 @@ void * rt_thread(void * arg) {
 
             ts_substraction(&ts_target, &ts_iter, &ts_result);
             msg.id = 1;
-            msg.i = i;
+            msg.i = cont_send;
+            cont_send++;
             msg.v_model_scaled = args->vars[0] * scale_virtual_to_real + offset_virtual_to_real;
             msg.v_model = args->vars[0];
             msg.c_model = 0;
@@ -310,6 +316,14 @@ void * rt_thread(void * arg) {
             copy_1d_array(out_values, msg.data_out, args->n_out_chan);
 
             write_comedi(session, args->n_out_chan, args->out_channels, out_values);
+
+            /*CALIBRACION*/
+            if(args->calibration == 1){
+                //Electrica en fase
+                int ret_ecm = calc_ecm(args->vars[0] * scale_virtual_to_real + offset_virtual_to_real, ret_values[0], rafaga_viva_pts, &ecm_result);
+                msg.ecm = ecm_result;
+
+            }
 
             msg.g_real_to_virtual = g_real_to_virtual;
             msg.g_virtual_to_real = g_virtual_to_real;
@@ -331,6 +345,8 @@ void * rt_thread(void * arg) {
         msg.c_real = 0;
         args->func(args->dim, args->dt, args->vars, args->params, c_real);
     }
+
+    int cal_on = TRUE;
 
     for (i = 0; i < args->points * args->s_points; i++) {
         /*TOCA INTERACCION*/
@@ -372,6 +388,24 @@ void * rt_thread(void * arg) {
 
             /*ENVIO POR LA TARJETA*/
             write_comedi(session, args->n_out_chan, args->out_channels, out_values);
+
+            /*CALIBRACION*/
+            if(args->calibration == 1){
+                //Electrica en fase
+                int ret_ecm = calc_ecm(args->vars[0] * scale_virtual_to_real + offset_virtual_to_real, ret_values[0], rafaga_viva_pts, &ecm_result);
+                msg.ecm = ecm_result;
+                if(cal_on && ret_ecm==1){
+                    int is_syn = is_syn_by_percentage(ecm_result);
+                    if (is_syn){
+                        printf("CALIBRATION END: g=%f\n", g_virtual_to_real[0]);
+                        cal_on=FALSE;
+                    }else{
+                        change_g(&g_virtual_to_real[0]);
+                        change_g(&g_real_to_virtual[0]);
+                    }
+                }
+            }
+            
 
             /*GUARDAR INFO*/
             msgsnd(args->msqid, (struct msgbuf *) &msg, sizeof(message) - sizeof(long), IPC_NOWAIT);

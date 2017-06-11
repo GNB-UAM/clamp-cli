@@ -117,7 +117,7 @@ double first_val_is_syn_by_percentage = -1;
 int count_is_syn_by_percentage = 0; 
 
 int is_syn_by_percentage(double val_sin){
-	double percentage = 0.7;
+	double percentage = 0.4;
 	int times_correct = 2;
 	
 	/*FIRST TIME*/

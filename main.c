@@ -103,7 +103,8 @@ int main (int argc, char * argv[]) {
 	double freq = 10000.0;
 	int time_var = 0;
 	int ret = 0;
-	int mode_auto_cal=0;
+	int mode_auto_cal = 0;
+	int c_a = FALSE;
 
 	r_args.n_in_chan = 0;
 	r_args.n_out_chan = 0;
@@ -112,7 +113,7 @@ int main (int argc, char * argv[]) {
 	r_args.anti=-1;
 	w_args.anti=-1;
 
-    while ((ret = getopt_long(argc, argv, "f:t:m:s:ci:co:h", main_opts, NULL)) >= 0) {
+    while ((ret = getopt_long(argc, argv, "f:t:m:s:i:o:c:a:h", main_opts, NULL)) >= 0) {
 		switch (ret) {
 		case 'f':
 			freq = atof(optarg) * 1000;
@@ -135,6 +136,11 @@ int main (int argc, char * argv[]) {
 		case 'a':
 			r_args.anti=1;
 			w_args.anti=1;
+			if(!c_a){
+				c_a=TRUE;
+			}else{
+				printf("DON'T USE -a AND -c AT THE SAME TIME\n");
+			}
 			break;
 		case 'c':
 			mode_auto_cal = atoi(optarg);
@@ -147,7 +153,11 @@ int main (int argc, char * argv[]) {
 				r_args.anti=1;
 				w_args.anti=1;
 			}
-			
+			if(!c_a){
+				c_a=TRUE;
+			}else{
+				printf("DON'T USE -a AND -c AT THE SAME TIME\n");
+			}
 			break;
 		case 'h':
 		default:

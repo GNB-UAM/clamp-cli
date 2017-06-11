@@ -17,3 +17,5 @@ int is_syn_by_percentage(double val_sin);
 int is_syn_by_slope(double val_sin);
 
 int is_syn_by_variance(double val_sin, double * var);
+
+void change_g (double *g);
