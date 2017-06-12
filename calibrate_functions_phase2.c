@@ -63,23 +63,23 @@ int calc_phase (double * v_a, double * v_b, double * t, int size, double th_up, 
 	if(v_b[0]>th_up)
 		up_b=TRUE;
 
-	FILE * ff;
-	ff = fopen("cosa", "w");
+	//FILE * ff;
+	//ff = fopen("cosa", "w");
 
 	for(i=0; i<size; i++){
 		//A
-		fprintf(ff, "%d %f %f", i, v_a[i], v_b[i]);
+		//fprintf(ff, "%d %f %f", i, v_a[i], v_b[i]);
 		if (up_a==FALSE && v_a[i]>th_up){
 			up_a=TRUE;
 			//Apuntamos tiempo de disparo
 			res_a[count_a]=t[i];
 			count_a++;
-			fprintf(ff, " 1");
+			//fprintf(ff, " 1");
 		}else if (up_a==TRUE && v_a[i]<th_on){
 			up_a=FALSE;
-			fprintf(ff, " 0");
+			//fprintf(ff, " 0");
 		}else {
-			fprintf(ff, " 0");
+			//fprintf(ff, " 0");
 		}
 
 		//B
@@ -88,15 +88,15 @@ int calc_phase (double * v_a, double * v_b, double * t, int size, double th_up, 
 			//Apuntamos tiempo de disparo
 			res_b[count_b]=t[i];
 			count_b++;
-			fprintf(ff, " 1\n");
+			//fprintf(ff, " 1\n");
 		}else if (up_b==TRUE && v_b[i]<th_on){
 			up_b=FALSE;
-			fprintf(ff, " 0\n");
+			//fprintf(ff, " 0\n");
 		}else{
-			fprintf(ff, " 0\n");
+			//fprintf(ff, " 0\n");
 		}
 	}
-	fclose(ff);
+	//fclose(ff);
 
 	//res a y b incluyen los tiempos de disparo
 	double a = res[i] = fabs(res_a[0] - res_b[0]);

@@ -2,7 +2,7 @@ This folder contains the data of the experiments
 
 Subfolders are created by day (ej: 2017y_07m_20d)
 
-Each subfolder contains one file for each experiment (ej: 17h_22m_06s_x)
+Each subfolder contains files for each experiment named like: 17h_22m_06s_x
 
 ==========================================================================
 
