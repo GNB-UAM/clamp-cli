@@ -23,7 +23,7 @@ int count_a_calc_ecm = 0;
 double ecm_calc_ecm =0;
 
 int calc_ecm (double v_a, double v_b, int life_burst_points, double *ecm_result){
-	int num_burst = 2;
+	int num_burst = 3;
 	double diff = 0;
 
 	if(count_a_calc_ecm<life_burst_points*num_burst){
@@ -41,7 +41,9 @@ int calc_ecm (double v_a, double v_b, int life_burst_points, double *ecm_result)
 
 /*
 */
-int calc_phase (double * v_a, double * t_a, double * v_b, double * t_b, int size, double th_up, double th_on, double * result){
+int calc_phase (double * v_a, double * v_b, double * t, int size, double th_up, double th_on, double * result){
+
+	double limit = 100; //ns
 
 	int up_a=FALSE, up_b=FALSE;
 	int size_res = 50;
@@ -54,12 +56,14 @@ int calc_phase (double * v_a, double * t_a, double * v_b, double * t_b, int size
 	if(v_b[0]>th_up)
 		up_b=TRUE;
 
+	printf("Tiempo de analisis = %ds\n", size/10000);
+
 	for(i=0; i<size; i++){
 		//A
 		if (up_a==FALSE && v_a[i]>th_up){
 			up_a=TRUE;
 			//Apuntamos tiempo de disparo
-			res_a[count_a]=t_a[i];
+			res_a[count_a]=t[i];
 			count_a++;
 		}else if (up_a==TRUE && v_a[i]<th_on){
 			up_a=FALSE;
@@ -69,7 +73,7 @@ int calc_phase (double * v_a, double * t_a, double * v_b, double * t_b, int size
 		if (up_b==FALSE && v_b[i]>th_up){
 			up_b=TRUE;
 			//Apuntamos tiempo de disparo
-			res_b[count_b]=t_b[i];
+			res_b[count_b]=t[i];
 			count_b++;
 		}else if (up_b==TRUE && v_b[i]<th_on){
 			up_b=FALSE;
@@ -104,7 +108,14 @@ int calc_phase (double * v_a, double * t_a, double * v_b, double * t_b, int size
 
 	*result = var;
 
-	return 1;
+	printf("var = %f\n", var);
+
+	/***SINCRO***/
+	if (var<limit){
+		return TRUE;
+	}else{
+		return FALSE;
+	}
 }
 
 /**********************************************
@@ -124,7 +135,7 @@ void set_is_syn_by_percentage(double val_sin){
 }
 
 int is_syn_by_percentage(double val_sin){
-	double percentage = 0.4;
+	double percentage = 0.6;
 	int times_correct = 2;
 	
 	/*FIRST TIME*/
@@ -154,15 +165,15 @@ double last_val_sin_is_syn_by_slope_1 = -1;
 double last_val_sin_is_syn_by_slope_2 = -1;
 
 int is_syn_by_slope(double val_sin){
-	double tolerance = 0.1;
+	double tolerance = 20;
 
 	/*FIRST TIME*/
 	if (last_val_sin_is_syn_by_slope_1 == -1){
 		last_val_sin_is_syn_by_slope_1 = val_sin;
-		return FALSE;
+		return ERR;
 	} else if(last_val_sin_is_syn_by_slope_2 == -1){
 		last_val_sin_is_syn_by_slope_2 = val_sin;
-		return FALSE;
+		return ERR;
 	}
 	/*SLOPE*/
 	double slope_1 = last_val_sin_is_syn_by_slope_2 - last_val_sin_is_syn_by_slope_1;
@@ -172,6 +183,7 @@ int is_syn_by_slope(double val_sin){
 
 	/*SLOPE IS THE SAME??*/
 	double diff = fabs(slope_2-slope_1);
+	//printf("d = %f\n", diff);
 	if (diff<=tolerance){
 		return TRUE;
 	}else{
@@ -186,8 +198,8 @@ double vals_is_syn_by_variance[4] = {-1};
 int num_variances_is_syn_by_variance = 4;
 int count_is_syn_by_variance = 0;
 
-int is_syn_by_variance(double val_sin, double * var){
-	double tolerance = 0.1;
+int is_syn_by_variance(double val_sin){
+	double tolerance = 500;
 
 	vals_is_syn_by_variance[count_is_syn_by_variance % num_variances_is_syn_by_variance] = val_sin;
 	count_is_syn_by_variance++;
@@ -209,7 +221,7 @@ int is_syn_by_variance(double val_sin, double * var){
 		res += tmp * tmp;
 	}
 	res = res / num_variances_is_syn_by_variance;
-	*var = res;
+	printf("var = %f\n", res);
 
 	if (res<=tolerance){
 		return TRUE;

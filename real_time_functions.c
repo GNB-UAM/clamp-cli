@@ -255,7 +255,7 @@ void * rt_thread(void * arg) {
     		g_real_to_virtual = (double *) malloc (sizeof(double) * 1);
 			g_virtual_to_real[0] = 0.3;
     		g_real_to_virtual[0] = 0.3;
-            if(args->calibration == 1){
+            if(args->calibration != 0){
                 g_virtual_to_real[0] = 0.0;
                 g_real_to_virtual[0] = 0.0;
             }
@@ -324,9 +324,10 @@ void * rt_thread(void * arg) {
             /*CALIBRACION*/
             if(args->calibration == 1){
                 //Electrica en fase
+                double ecm_old=ecm_result;
                 int ret_ecm = calc_ecm(args->vars[0] * scale_virtual_to_real + offset_virtual_to_real, ret_values[0], rafaga_viva_pts, &ecm_result);
                 msg.ecm = ecm_result;
-                if(ecm_result!=0){
+                if(ecm_result!=0 && ecm_old!=ecm_result){
                     sum_ecm+=ecm_result;
                     sum_ecm_cont++;
                 }
@@ -358,6 +359,12 @@ void * rt_thread(void * arg) {
         set_is_syn_by_percentage(sum_ecm);
     }
     int cal_on = TRUE;
+
+    int cont_lectura=0;
+    int size_lectura=2*args->freq;
+    double * lectura_a = (double *) malloc (sizeof(double) * 2*args->freq);
+    double * lectura_b = (double *) malloc (sizeof(double) * 2*args->freq);
+    double * lectura_t = (double *) malloc (sizeof(double) * 2*args->freq);
 
     for (i = 0; i < args->points * args->s_points; i++) {
         /*TOCA INTERACCION*/
@@ -401,19 +408,54 @@ void * rt_thread(void * arg) {
             write_comedi(session, args->n_out_chan, args->out_channels, out_values);
 
             /*CALIBRACION*/
-            if(args->calibration == 1){
-                //Electrica en fase
+            if(args->calibration==1 || args->calibration==2 || args->calibration==3){
+                //Electrica en fase - ecm
                 int ret_ecm = calc_ecm(args->vars[0] * scale_virtual_to_real + offset_virtual_to_real, ret_values[0], rafaga_viva_pts, &ecm_result);
                 msg.ecm = ecm_result;
                 if(cal_on && ret_ecm==1){
-                    int is_syn = is_syn_by_percentage(ecm_result);
-                    if (is_syn){
+
+                    int is_syn;
+                    if (args->calibration == 1){
+                        //Porcentaje
+                        is_syn = is_syn_by_percentage(ecm_result);
+                    }else if (args->calibration == 2){
+                        //Pendiente
+                        is_syn = is_syn_by_slope(ecm_result);
+                    }else if (args->calibration == 3){
+                        //Var
+                        is_syn = is_syn_by_variance(ecm_result);
+                    }
+
+                    if (is_syn==TRUE){
                         printf("CALIBRATION END: g=%f\n", g_virtual_to_real[0]);
                         cal_on=FALSE;
-                    }else{
+                    }else if(is_syn==FALSE){
                         change_g(&g_virtual_to_real[0]);
                         change_g(&g_real_to_virtual[0]);
                     }
+
+                }
+            }else if (args->calibration==4){
+                //Electrica y var
+                if(cont_lectura<size_lectura){
+                    /*Guardamos info*/
+                    lectura_b[cont_lectura]=args->vars[0] * scale_virtual_to_real + offset_virtual_to_real;
+                    lectura_a[cont_lectura]=ret_values[0];
+                    lectura_t[cont_lectura]=msg.t_absol;
+                    cont_lectura++;
+                }else{
+                    /*Ejecuta metrica*/
+                    double res_phase;
+                    int is_syn = calc_phase (lectura_b, lectura_a, lectura_t, size_lectura, max_real*0.8, min_abs_real*0.2, &res_phase);
+                    if (is_syn==TRUE){
+                        printf("CALIBRATION END: g=%f\n", g_virtual_to_real[0]);
+                        cal_on=FALSE;
+                    }else if (is_syn==FALSE){
+                        printf("SUBI\n");
+                        change_g(&g_virtual_to_real[0]);
+                        change_g(&g_real_to_virtual[0]);
+                    }
+                    cont_lectura=0;
                 }
             }
             

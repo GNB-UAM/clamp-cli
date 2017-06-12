@@ -144,14 +144,29 @@ int main (int argc, char * argv[]) {
 			break;
 		case 'c':
 			mode_auto_cal = atoi(optarg);
+
 			if (mode_auto_cal == 1){
 				//Electrica en fase - ecm y %
 				synapse=0;
 				r_args.anti=-1;
 				w_args.anti=-1;
 			}else if(mode_auto_cal == 2){
-				
+				//Electrica en fase - ecm y slope
+				synapse=0;
+				r_args.anti=-1;
+				w_args.anti=-1;
+			}else if(mode_auto_cal == 3){
+				//Electrica en fase - ecm y var
+				synapse=0;
+				r_args.anti=-1;
+				w_args.anti=-1;
+			}else if(mode_auto_cal == 4){
+				//Electrica en fase - fase y var
+				synapse=0;
+				r_args.anti=-1;
+				w_args.anti=-1;
 			}
+
 			if(!c_a){
 				c_a=TRUE;
 			}else{
