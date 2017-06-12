@@ -165,6 +165,12 @@ int main (int argc, char * argv[]) {
 				synapse=0;
 				r_args.anti=-1;
 				w_args.anti=-1;
+			}else if(mode_auto_cal == 5){
+				//Electrica en anti - fase y var
+				synapse=0;
+				r_args.anti=1;
+				w_args.anti=1;
+				mode_auto_cal = 4;
 			}
 
 			if(!c_a){

@@ -42,8 +42,9 @@ axarr[0].legend()
 
 axarr[1].plot(time, ecm)
 axarr[1].set_title("ECM")
-axarr[1].axhline(y=47.55, color='r', linestyle='--', linewidth=0.4, label="ECM medio inicial")
-axarr[1].axhline(y=19.00, color='g', linestyle='--', linewidth=0.4, label="ECM objetivo")
+axarr[1].axhline(y=12.6, color='r', linestyle='--', linewidth=0.4, label="ECM medio inicial")
+axarr[1].axhline(y=5.05, color='g', linestyle='--', linewidth=0.4, label="ECM objetivo")
+#axarr[1].axvline(x=5, color='b', linestyle='--', linewidth=0.4, label="Inicio")
 axarr[1].legend()
 
 axarr[2].plot(time, g0)

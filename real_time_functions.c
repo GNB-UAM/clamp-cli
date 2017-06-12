@@ -292,6 +292,14 @@ void * rt_thread(void * arg) {
     int t_obs=5;
     int sum_ecm_cont=0;
 
+    int cal_on = TRUE;
+    double res_phase = 0;
+    int cont_lectura=0;
+    int size_lectura=2*args->freq;
+    double * lectura_a = (double *) malloc (sizeof(double) * 2*args->freq);
+    double * lectura_b = (double *) malloc (sizeof(double) * 2*args->freq);
+    double * lectura_t = (double *) malloc (sizeof(double) * 2*args->freq);
+
     for (i = 0; i < t_obs * args->freq * args->s_points; i++) {
         if (i % args->s_points == 0) {
             clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts_target, NULL);
@@ -331,6 +339,18 @@ void * rt_thread(void * arg) {
                     sum_ecm+=ecm_result;
                     sum_ecm_cont++;
                 }
+            }else if(args->calibration  == 4){
+                 if(cont_lectura<size_lectura){
+                    /*Guardamos info*/
+                    lectura_b[cont_lectura]=args->vars[0] * scale_virtual_to_real + offset_virtual_to_real;
+                    lectura_a[cont_lectura]=ret_values[0];
+                    lectura_t[cont_lectura]=msg.t_absol;
+                    cont_lectura++;
+                }else{
+                    int is_syn = calc_phase (lectura_b, lectura_a, lectura_t, size_lectura, max_real*0.5, min_real, &res_phase, args->anti);
+                    msg.ecm = res_phase;
+                    cont_lectura=0;
+                }
             }
 
             msg.g_real_to_virtual = g_real_to_virtual;
@@ -358,13 +378,8 @@ void * rt_thread(void * arg) {
         sum_ecm = sum_ecm / sum_ecm_cont;
         set_is_syn_by_percentage(sum_ecm);
     }
-    int cal_on = TRUE;
+    cont_lectura=0;
 
-    int cont_lectura=0;
-    int size_lectura=2*args->freq;
-    double * lectura_a = (double *) malloc (sizeof(double) * 2*args->freq);
-    double * lectura_b = (double *) malloc (sizeof(double) * 2*args->freq);
-    double * lectura_t = (double *) malloc (sizeof(double) * 2*args->freq);
 
     for (i = 0; i < args->points * args->s_points; i++) {
         /*TOCA INTERACCION*/
@@ -445,15 +460,16 @@ void * rt_thread(void * arg) {
                     cont_lectura++;
                 }else{
                     /*Ejecuta metrica*/
-                    double res_phase;
-                    int is_syn = calc_phase (lectura_b, lectura_a, lectura_t, size_lectura, max_real*0.8, min_abs_real*0.2, &res_phase);
-                    if (is_syn==TRUE){
-                        printf("CALIBRATION END: g=%f\n", g_virtual_to_real[0]);
-                        cal_on=FALSE;
-                    }else if (is_syn==FALSE){
-                        printf("SUBI\n");
-                        change_g(&g_virtual_to_real[0]);
-                        change_g(&g_real_to_virtual[0]);
+                    int is_syn = calc_phase (lectura_b, lectura_a, lectura_t, size_lectura, max_real*0.5, min_real, &res_phase, args->anti);
+                    msg.ecm = res_phase;
+                    if(cal_on){
+                        if (is_syn==TRUE){
+                            printf("CALIBRATION END: g=%f\n", g_virtual_to_real[0]);
+                            cal_on=FALSE;
+                        }else if (is_syn==FALSE){
+                            change_g(&g_virtual_to_real[0]);
+                            change_g(&g_real_to_virtual[0]);
+                        } 
                     }
                     cont_lectura=0;
                 }
