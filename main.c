@@ -171,6 +171,11 @@ int main (int argc, char * argv[]) {
 				r_args.anti=1;
 				w_args.anti=1;
 				mode_auto_cal = 4;
+			}else if(mode_auto_cal == 6){
+				//variar mu de hr
+				model=1;
+				r_args.anti=-1;
+				w_args.anti=-1;
 			}
 
 			if(!c_a){
@@ -222,6 +227,8 @@ int main (int argc, char * argv[]) {
 
 			params[I_HR] = 3.0;
 			params[R_HR] = 0.0021;
+			if(mode_auto_cal==6)
+				params[R_HR] = 0.0011;
 			params[S_HR] = 4.0;
 
 			r_args.params = params;

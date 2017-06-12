@@ -147,6 +147,7 @@ void * writer_thread(void * arg) {
             fprintf(f1, "\n");
 
             fprintf(f2, " %f", msg.ecm);
+            fprintf(f2, " %f", msg.extra);
             for (j = 0; j < msg.n_g; ++j) {
                 fprintf(f2, " %f", msg.g_real_to_virtual[j]);
                 fprintf(f2, " %f", msg.g_virtual_to_real[j]);
@@ -255,7 +256,7 @@ void * rt_thread(void * arg) {
     		g_real_to_virtual = (double *) malloc (sizeof(double) * 1);
 			g_virtual_to_real[0] = 0.3;
     		g_real_to_virtual[0] = 0.3;
-            if(args->calibration != 0){
+            if(args->calibration != 0 && args->calibration != 6){
                 g_virtual_to_real[0] = 0.0;
                 g_real_to_virtual[0] = 0.0;
             }
@@ -307,6 +308,7 @@ void * rt_thread(void * arg) {
 
             ts_substraction(&ts_target, &ts_iter, &ts_result);
             msg.id = 1;
+            msg.extra = 0;
             msg.i = cont_send;
             cont_send++;
             msg.v_model_scaled = args->vars[0] * scale_virtual_to_real + offset_virtual_to_real;
@@ -379,6 +381,7 @@ void * rt_thread(void * arg) {
         set_is_syn_by_percentage(sum_ecm);
     }
     cont_lectura=0;
+    int cont_6=0;
 
 
     for (i = 0; i < args->points * args->s_points; i++) {
@@ -392,6 +395,7 @@ void * rt_thread(void * arg) {
 
             /*GUARDAR INFO*/
             msg.id = 1;
+            msg.extra = 0;
             msg.i = cont_send;
             cont_send++;
             msg.v_model_scaled = args->vars[0] * scale_virtual_to_real + offset_virtual_to_real;
@@ -473,6 +477,17 @@ void * rt_thread(void * arg) {
                     }
                     cont_lectura=0;
                 }
+            }else if(args->calibration==6){
+                cont_6++;
+                if(cont_6==10000*3){
+                    args->params[R_HR]+=0.0001;
+                    printf("%f\n", args->params[R_HR]);
+                    cont_6=0;
+                }
+                int ret_ecm = calc_ecm(args->vars[0] * scale_virtual_to_real + offset_virtual_to_real, ret_values[0], rafaga_viva_pts, &ecm_result);
+                msg.ecm = ecm_result;
+                msg.extra = args->params[R_HR];
+                
             }
             
 

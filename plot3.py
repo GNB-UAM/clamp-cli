@@ -31,6 +31,7 @@ array = dataset.values
 time = array[:, 0] / 1000
 index = array[:,1]
 ecm = array[:,2]
+extra = array[:,3]
 g0 = array[:,4]
 
 f, axarr = plt.subplots(3, sharex=True, figsize=(12,6))
@@ -47,8 +48,8 @@ axarr[1].set_title("ECM")
 #axarr[1].axvline(x=5, color='b', linestyle='--', linewidth=0.4, label="Inicio")
 axarr[1].legend()
 
-axarr[2].plot(time, g0)
-axarr[2].set_title("Conductancia")
+axarr[2].plot(time, extra)
+axarr[2].set_title("Parametro que cambia")
 axarr[2].legend()
 
 plt.xlabel("Tiempo (s)")

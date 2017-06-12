@@ -48,6 +48,7 @@ typedef struct {
     double * g_virtual_to_real;
     int n_g;
     double ecm; 
+    double extra;
 } message;
 
 typedef struct {
