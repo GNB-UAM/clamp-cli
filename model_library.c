@@ -87,25 +87,27 @@ void ms_f (double * vars, double * ret, double * params, double v_pre) {
     
 
 double chem_fast (double v_post, double v_pre, double * g, double * aux) {
-    double e_syn = aux[0] * 1.153846;
-    double v_f = aux[0] * 0.769230;
-    return ((*g) * (v_post - e_syn)) / (1.0 + exp(0.2 * (v_f - v_pre)));
+    double e_syn = aux[SC_MIN] * 1.153846;
+    double v_f = aux[SC_MIN] * 0.769230;
+    double s_f = aux[SC_BT] * 0.2;
+
+    return ((*g) * (v_post - e_syn)) / (1.0 + exp(s_f * (v_f - v_pre)));
 }
 
 double chem_slow (double v_post, double * g, double * aux) {
-    double vars[1] = {aux[2]};
+    double vars[1] = {aux[SC_OLD]};
     double params[4];
     double e_syn = aux[0] * 1.153846;
 
     params[MS_K1] = 1;
     params[MS_K2] = 0.03;
-    params[MS_SS] = 1;
-    params[MS_VS] = aux[0] * 0.846153;
+    params[MS_SS] = aux[SC_BT];
+    params[MS_VS] = aux[SC_MIN] * 0.846153;
 
-    runge_kutta_6(&ms_f, 1, aux[1], vars, params, 0);
-    aux[2] = vars[0];
+    runge_kutta_6(&ms_f, 1, aux[SC_DT], vars, params, 0);
+    aux[SC_OLD] = vars[0];
 
-    return (*g) * aux[2] * (v_post - e_syn);
+    return (*g) * aux[SC_OLD] * (v_post - e_syn);
 }
 
 void chem_syn (double v_post, double v_pre, double * g, double * ret, double * aux) {

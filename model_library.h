@@ -40,6 +40,10 @@
 #define MS_K2 1
 #define MS_SS 2
 #define MS_VS 3
+#define SC_DT 0
+#define SC_MIN 1
+#define SC_OLD 2
+#define SC_BT 3
 
 
 

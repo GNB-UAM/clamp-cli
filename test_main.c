@@ -29,12 +29,12 @@ int main () {
 	double syn = 0;
 	void (*func)(int, double, double*, double*, double);
 
-	model = 1;
+	model = 0;
 
 	switch (model){
 		case IZHIKEVICH:
 			vars = (double*) malloc (sizeof(double) * 2);
-			params = (double*) malloc (sizeof(double) * 4);
+			params = (double*) malloc (sizeof(double) * 5);
 
 			vars[0] = 10.0;
 			vars[1] = 0.0;
@@ -73,15 +73,35 @@ int main () {
 			break;
 	}
 
+	double g[2];
+	g[0] = 0.3;
+    g[1] = 0.0;
 
+    double vars2[3];
+    vars2[0] = -2.0;
+	vars2[1] = 0.0;
+	vars2[2] = 0.0;
 
-	for (i = 0; i < 1000000; i++) {
+    double * syn_aux_params = (double *) malloc (sizeof(double) * 3);
+	syn_aux_params[0] = -75.0;
+	syn_aux_params[1] = 0.03;
+	syn_aux_params[2] = 0;
+
+	for (i = 0; i < 100000; i++) {
+		(*func)(dim, dt, vars2, params, syn);
+
+		chem_syn(vars[0], vars2[0], g, &syn, syn_aux_params);
+		fprintf(f, "%f ", syn);
 		(*func)(dim, dt, vars, params, syn);
-		fprintf(f, "%f\n", vars[0]);
+		fprintf(f, "%f ", vars[0]);
+		fprintf(f, "%f\n", vars2[0]);
+
+		chem_syn(vars2[0], vars[0], g, &syn, syn_aux_params);
 	}
 
 	free(vars);
 	free(params);
+	free(syn_aux_params);
 	fclose(f);
 	return 1;
 }

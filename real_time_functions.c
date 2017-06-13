@@ -264,10 +264,11 @@ void * rt_thread(void * arg) {
 
 			break;
 		case CHEMICAL:
-			syn_aux_params = (double *) malloc (sizeof(double) * 2);
-			syn_aux_params[0] = min_abs_model * scale_virtual_to_real;
-			syn_aux_params[1] = args->dt;
-			syn_aux_params[2] = 0;
+			syn_aux_params = (double *) malloc (sizeof(double) * 3);
+			syn_aux_params[SC_MIN] = min_abs_model * scale_virtual_to_real;
+			syn_aux_params[SC_DT] = args->dt;
+			syn_aux_params[SC_OLD] = 0;
+            syn_aux_params[SC_BT] = period_disp_real;
 
 			g_virtual_to_real = (double *) malloc (sizeof(double) * 2);
     		g_real_to_virtual = (double *) malloc (sizeof(double) * 2);
