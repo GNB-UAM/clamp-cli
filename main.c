@@ -24,7 +24,7 @@ struct option main_opts[] = {
 	{"input_channels", required_argument, NULL, 'i'},
 	{"output_channels", required_argument, NULL, 'o'},
 	{"calibration", required_argument, NULL, 'c'},
-	{"antiphase", no_argument, NULL, 'a'},
+	{"antiphase", required_argument, NULL, 'a'},
 	{"help", no_argument, NULL, 'h'},
 	{0},
 };
@@ -134,8 +134,11 @@ int main (int argc, char * argv[]) {
 			parse_channels(optarg, &(r_args.out_channels), &(r_args.n_out_chan));
 			break;
 		case 'a':
-			r_args.anti=1;
-			w_args.anti=1;
+			if (atoi(optarg) == 1) {
+				r_args.anti=1;
+				w_args.anti=1;
+			}
+			
 			if(!c_a){
 				c_a=TRUE;
 			}else{

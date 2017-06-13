@@ -111,7 +111,7 @@ double chem_slow (double v_post, double * g, double * aux) {
 }
 
 void chem_syn (double v_post, double v_pre, double * g, double * ret, double * aux) {
-    *ret = chem_fast(v_post, v_pre, &(g[G_FAST]), aux) + chem_slow(v_post, &(g[G_SLOW]), aux);
+    *ret = -(chem_fast(v_post, v_pre, &(g[G_FAST]), aux) + chem_slow(v_post, &(g[G_SLOW]), aux));
     return;
 }
 

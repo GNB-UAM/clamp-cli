@@ -48,8 +48,10 @@ for j in range(8 + n_in_chan, 8 + n_in_chan + n_out_chan):
 	data_out.append(data[:, j])
 
 
-plt.plot(v_model_scaled, label="modelo")
-plt.plot(data_in[0], label="viva")
+plt.plot(v_model_scaled, label="Modelo")
+plt.plot(data_in[0], label="Viva")
+plt.plot(c_model, label="C_model")
+plt.plot(c_viva, label="c_viva")
 plt.legend()
 plt.show()
 
@@ -297,7 +299,7 @@ def plot_lat_dist2():
 #plot_iter_time()
 #plot_iter_model_time()
 #plot_awake_time()
-#plot_lat_dist()
+plot_lat_dist()
 #plot_lat_dist2()
 #plot_sleep_time()
 #plot_together()

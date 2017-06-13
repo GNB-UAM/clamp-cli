@@ -243,9 +243,9 @@ void * rt_thread(void * arg) {
     msg2.id = 1;
     msgsnd(args->msqid, (struct msgbuf *) &msg2, sizeof(message_s_points) - sizeof(long), IPC_NOWAIT);
 
-    printf("\n - Phase 1 OK\n - Phase 2 START\n\n");
+    /*printf("\n - Phase 1 OK\n - Phase 2 START\n\n");
     fflush(stdout);
-    sleep(1);
+    sleep(1);*/
 
 
     switch (args->type_syn) {
@@ -264,8 +264,7 @@ void * rt_thread(void * arg) {
 
 			break;
 		case CHEMICAL:
-			syn_aux_params = (double *) malloc (sizeof(double) * 3);
-			syn_aux_params[SC_MIN] = min_abs_model * scale_virtual_to_real;
+			syn_aux_params = (double *) malloc (sizeof(double) * 4);
 			syn_aux_params[SC_DT] = args->dt;
 			syn_aux_params[SC_OLD] = 0;
             syn_aux_params[SC_BT] = period_disp_real;
@@ -273,10 +272,10 @@ void * rt_thread(void * arg) {
 			g_virtual_to_real = (double *) malloc (sizeof(double) * 2);
     		g_real_to_virtual = (double *) malloc (sizeof(double) * 2);
 
-    		g_virtual_to_real[G_FAST] = 0.1;
-    		g_virtual_to_real[G_SLOW] = 0.2;
-    		g_real_to_virtual[G_FAST] = 0.1;
-    		g_real_to_virtual[G_SLOW] = 0.2;
+    		g_virtual_to_real[G_FAST] = 0.3;
+    		g_virtual_to_real[G_SLOW] = 0.0;
+    		g_real_to_virtual[G_FAST] = 0.3;
+    		g_real_to_virtual[G_SLOW] = 0.0;
     		msg.n_g = 2;
 
 
@@ -286,9 +285,6 @@ void * rt_thread(void * arg) {
         	pthread_exit(NULL);
 	}
 
-    clock_gettime(CLOCK_MONOTONIC, &ts_target);
-    ts_assign (&ts_start,  ts_target);
-    ts_add_time(&ts_target, 0, args->period);
 
     double sum_ecm;
     int t_obs=5;
@@ -301,6 +297,11 @@ void * rt_thread(void * arg) {
     double * lectura_a = (double *) malloc (sizeof(double) * 2*args->freq);
     double * lectura_b = (double *) malloc (sizeof(double) * 2*args->freq);
     double * lectura_t = (double *) malloc (sizeof(double) * 2*args->freq);
+
+
+    clock_gettime(CLOCK_MONOTONIC, &ts_target);
+    ts_assign (&ts_start,  ts_target);
+    ts_add_time(&ts_target, 0, args->period);
 
     for (i = 0; i < t_obs * args->freq * args->s_points; i++) {
         if (i % args->s_points == 0) {
@@ -370,6 +371,9 @@ void * rt_thread(void * arg) {
     			free(g_real_to_virtual);
     			free(args->in_channels);
     			free(args->out_channels);
+                free(lectura_a);
+                free(lectura_b);
+                free(lectura_t);
                 pthread_exit(NULL);
             }
         }
@@ -404,8 +408,10 @@ void * rt_thread(void * arg) {
             msg.lat = ts_result.tv_sec * NSEC_PER_SEC + ts_result.tv_nsec;
 
             /*SINAPSIS Y CORRIENTE EN VIRTUAL TO REAL*/
+            syn_aux_params[SC_MIN] = min_abs_model * scale_virtual_to_real + offset_virtual_to_real;
             args->syn(args->vars[0] * scale_virtual_to_real + offset_virtual_to_real, ret_values[0], g_virtual_to_real, &c_model, syn_aux_params);
-            msg.c_model = c_model;
+            syn_aux_params[SC_MIN] = min_abs_model;
+            args->syn(args->vars[0], ret_values[0] * scale_real_to_virtual + offset_real_to_virtual, g_virtual_to_real, &(msg.c_model), syn_aux_params);
 
             /*GUARDAR INFO*/
             ts_substraction(&ts_start, &ts_iter, &ts_result);
@@ -511,13 +517,17 @@ void * rt_thread(void * arg) {
     			free(g_real_to_virtual);
     			free(args->in_channels);
     			free(args->out_channels);
+                free(lectura_a);
+                free(lectura_b);
+                free(lectura_t);
                 pthread_exit(NULL);
             }
         }
 
-        /*CALCULO CORRIENTE E INTEGRACIÓN DEL MODELO*/ 
+        /*CALCULO CORRIENTE E INTEGRACIÓN DEL MODELO*/
+        syn_aux_params[SC_MIN] = min_abs_real * scale_real_to_virtual + offset_real_to_virtual;
         args->syn(ret_values[0] * scale_real_to_virtual + offset_real_to_virtual, args->vars[0], g_real_to_virtual, &c_real, syn_aux_params);
-        msg.c_real = c_real * scale_virtual_to_real + offset_virtual_to_real;
+        msg.c_real = c_real;
         args->func(args->dim, args->dt, args->vars, args->params, args->anti*c_real);
     }
 
@@ -531,5 +541,8 @@ void * rt_thread(void * arg) {
     free(g_real_to_virtual);
     free(args->in_channels);
     free(args->out_channels);
+    free(lectura_a);
+    free(lectura_b);
+    free(lectura_t);
     pthread_exit(NULL);
 }

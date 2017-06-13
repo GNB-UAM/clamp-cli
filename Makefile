@@ -9,7 +9,7 @@ main.o: main.c model_library.c model_library.h real_time_functions.c real_time_f
 	$(CC) -c $(LIBS_COMEDI) main.c
 
 model_library.o: model_library.c model_library.h
-	$(CC) -c model_library.c
+	$(CC) -c -g model_library.c
 
 real_time_functions.o: real_time_functions.c real_time_functions.h
 	$(CC) -c $(LIBS_COMEDI) $(LIBS_RT) real_time_functions.c
