@@ -274,8 +274,8 @@ void * rt_thread(void * arg) {
 
     		g_virtual_to_real[G_FAST] = 0.3;
     		g_virtual_to_real[G_SLOW] = 0.0;
-    		g_real_to_virtual[G_FAST] = 0.3;
-    		g_real_to_virtual[G_SLOW] = 0.0;
+    		g_real_to_virtual[G_FAST] = 0.0;
+    		g_real_to_virtual[G_SLOW] = 0.6;
     		msg.n_g = 2;
 
 

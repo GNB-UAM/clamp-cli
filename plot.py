@@ -48,11 +48,15 @@ for j in range(8 + n_in_chan, 8 + n_in_chan + n_out_chan):
 	data_out.append(data[:, j])
 
 
-plt.plot(v_model_scaled, label="Modelo")
-plt.plot(data_in[0], label="Viva")
-plt.plot(c_model, label="C_model")
-plt.plot(c_viva, label="c_viva")
+plt.figure(figsize=(12,6))
+plt.plot(t_absol, v_model_scaled, label="Model")
+plt.plot(t_absol, data_in[0], label="Real")
+plt.plot(t_absol, c_model, label="c_model", linewidth=0.1)
+plt.plot(t_absol, c_viva, label="c_real", linewidth=0.1)
 plt.legend()
+plt.xlabel("Time (ms)")
+plt.ylabel("Voltage (mV)")
+plt.title("Chemical synapse connected neurons")
 plt.show()
 
 '''
@@ -176,7 +180,7 @@ def plot_lat_dist():
 	edges = hist[1][:-1]
 
 	if len(values) > 100:
-		fig = plt.figure(figsize=(20,10))
+		fig = plt.figure(figsize=(12,6))
 		gs = gridspec.GridSpec(1, 4)
 		ax1 = plt.subplot(gs[0, :3])
 		ax2 = plt.subplot(gs[0, 3], sharey=ax1)
@@ -216,7 +220,7 @@ def plot_lat_dist():
 		ax1.set_ylabel("Ocurrences")
 		ax1.set_xlabel("Latencies (μs)")
 	else:
-		plt.figure(figsize=(20,10))
+		plt.figure(figsize=(12,6))
 		plt.bar(edges, values)
 		plt.yscale("log")
 		plt.grid()
@@ -224,7 +228,7 @@ def plot_lat_dist():
 		plt.ylabel("Ocurrences")
 		plt.xlabel("Latencies (μs)")
 
-	plt.suptitle("Izhikevich "+args["title"]+" latencies")
+	plt.suptitle(args["title"]+" latencies")
 	plt.savefig("figures/"+args["name"]+"_lat_hist.pdf")
 
 	plt.show()
