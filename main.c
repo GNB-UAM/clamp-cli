@@ -328,7 +328,7 @@ int main (int argc, char * argv[]) {
     r_args.freq = freq;
     r_args.filename = filename;
 
-    w_args.path = path_b;
+    w_args.path = path;
     w_args.filename = filename;
     w_args.points = r_args.points;
     w_args.s_points = r_args.s_points;

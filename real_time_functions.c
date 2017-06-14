@@ -60,9 +60,9 @@ void * writer_thread(void * arg) {
     args = arg;
     id = pthread_self();
 
-    char filename_1 [strlen(args->filename) + 6];
-    char filename_2 [strlen(args->filename) + 6];
-    char filename_3 [strlen(args->path) + 12];
+    char * filename_1 = (char *) malloc (sizeof(char)*(strlen(args->filename)+6));
+    char * filename_2 = (char *) malloc (sizeof(char)*(strlen(args->filename)+6));
+    char * filename_3 = (char *) malloc (sizeof(char)*(strlen(args->path)+12));
 
     if (sprintf(filename_1, "%s_1.txt", args->filename) < 0) {
         printf("Error creating file 1 name\n;");
@@ -161,6 +161,9 @@ void * writer_thread(void * arg) {
     
     fclose(f1);
     fclose(f2);
+    free(filename_1);
+    free(filename_2);
+    free(filename_3);
     pthread_exit(NULL);
 }
 
