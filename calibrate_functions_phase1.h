@@ -19,13 +19,15 @@
 #define TRUE 1
 #define FALSE 0
 
-int ini_recibido (double *min, double *min_abs, double *max, double *period_signal, Comedi_session session, int chan, int period, int freq, char* filename);
+int ini_recibido (double *min, double *min_abs, double *max, double *max_relativo, double *period_signal, Comedi_session session, int chan, int period, int freq, char* filename);
 
 int signal_convolution (double * lectura, int size_l, double * result, int size_r);
 
 int signal_average(double * lectura, int size_l, double * result, int size_r);
 
-double signal_period(int seg_observacion, double * signal, int size, double th);
+double signal_period_1(int seg_observacion, double * signal, int size, double th_up, double th_on);
+
+double signal_period_2(int seg_observacion, double * signal, int size, double th_up, double th_on);
 
 void array_to_file(double * array, int size, char * filename_date, char * tittle);
 

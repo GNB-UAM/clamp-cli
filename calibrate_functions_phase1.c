@@ -1,6 +1,6 @@
 #include "calibrate_functions_phase1.h"
 
-int ini_recibido (double *min, double *min_abs, double *max, double *period_signal, Comedi_session session, int chan, int period, int freq, char* filename){
+int ini_recibido (double *min, double *min_abs, double *max, double *max_relativo, double *period_signal, Comedi_session session, int chan, int period, int freq, char* filename){
     
     /*TIEMPO OBSERVACION*/
     int segs_observo = 4; 
@@ -63,16 +63,32 @@ int ini_recibido (double *min, double *min_abs, double *max, double *period_sign
     }
 
     /*RETURN*/
-    *min_abs = mini;
-    *min = mini*0.7; //0.55
-    *max = maxi;
+    double min_abs_aux = mini;
+    double max_aux = maxi;
+    *min_abs = min_abs_aux;
+    *max = max_aux;
+
+    double porcentaje_mini = 0.15;
+    double porcentaje_maxi = 0.15;
+
+    if(mini>0){
+        *min = mini + mini*porcentaje_mini;
+    }else{
+        *min = mini - mini*porcentaje_mini;
+    }
+
+    if(maxi>0){
+        *max_relativo = maxi - maxi*porcentaje_maxi;
+    }else{
+        *max_relativo = maxi + maxi*porcentaje_maxi;
+    }
 
     /*GUARDAR DATOS LEIDOS*/
 
     /*PERIODO DE LA SEÑAL*/
     signal_convolution (lectura, size_lectura, convolution, size_lectura);
     signal_average (lectura, size_lectura, media, size_media);
-    *period_signal = signal_period (segs_observo, convolution, size_lectura, *min);
+    *period_signal = signal_period_2 (segs_observo, convolution, size_lectura, *max_relativo, *min);
     //printf("Perido signal = %f\n", *period_signal);
     array_to_file(lectura, size_lectura, filename, "lectura_ini");
     array_to_file(convolution, size_lectura, filename, "lectura_ini_filtro");
@@ -118,23 +134,44 @@ int signal_average(double * lectura, int size_l, double * result, int size_r){
 	return OK;
 }
 
-double signal_period(int seg_observacion, double * signal, int size, double th){
+double signal_period_1(int seg_observacion, double * signal, int size, double th_up, double th_on){
+    printf("up = %f // on = %f\n", th_up, th_on);
 	int up=FALSE;
-	if (signal[0]>th)
+	if (signal[0]>th_on)
 		up=TRUE;
 
 	int changes=0, i=0;
 	for (i=0; i<size; i++){
-		if(up==TRUE && signal[i]<th){
+		if(up==TRUE && signal[i]<th_on){
 			//Cambio de tendencia
 			changes++;
 			up=FALSE;
-		}else if(up==FALSE && signal[i]>th){
+		}else if(up==FALSE && signal[i]>th_on){
 			up=TRUE;
 		}
 	}
 	double period = 1.0 / (changes/seg_observacion);
 	return period;
+}
+
+double signal_period_2(int seg_observacion, double * signal, int size, double th_up, double th_on){
+    int up=FALSE;
+    if (signal[0]>th_up)
+        up=TRUE;
+
+    int changes=0, i=0;
+    for (i=0; i<size; i++){
+        if(up==FALSE && signal[i]>th_up){
+            //Cambio de tendencia
+            changes++;
+            up=TRUE;
+        }else if(up==TRUE && signal[i]<th_on){
+            up=FALSE;
+        }
+
+    }
+    double period = 1.0 / (changes/seg_observacion);
+    return period;
 }
 
 void array_to_file(double * array, int size, char * filename_date, char * tittle){

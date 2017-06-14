@@ -175,7 +175,7 @@ void * rt_thread(void * arg) {
     pthread_t id;
 
     double max_model, min_model, min_abs_model;
-    double max_real, min_real, min_abs_real;
+    double max_real, min_real, min_abs_real, max_real_relativo;
     double scale_real_to_virtual;
     double scale_virtual_to_real;
     double offset_virtual_to_real;
@@ -220,7 +220,7 @@ void * rt_thread(void * arg) {
 
     /*CALIBRADO ESPACIAL-TEMPORAL*/
     if (args->n_in_chan > 0) {
-	    if ( ini_recibido (&min_real, &min_abs_real, &max_real, &period_disp_real, session, calib_chan, args->period, args->freq, args->filename) == -1 ) {
+	    if ( ini_recibido (&min_real, &min_abs_real, &max_real, &max_real_relativo, &period_disp_real, session, calib_chan, args->period, args->freq, args->filename) == -1 ) {
 			close_device_comedi(d);
 	        pthread_exit(NULL);
 		}
@@ -353,7 +353,7 @@ void * rt_thread(void * arg) {
                     lectura_t[cont_lectura]=msg.t_absol;
                     cont_lectura++;
                 }else{
-                    int is_syn = calc_phase (lectura_b, lectura_a, lectura_t, size_lectura, max_real*0.5, min_real, &res_phase, args->anti);
+                    int is_syn = calc_phase (lectura_b, lectura_a, lectura_t, size_lectura, max_real_relativo, min_real, &res_phase, args->anti);
                     msg.ecm = res_phase;
                     cont_lectura=0;
                 }
@@ -475,7 +475,7 @@ void * rt_thread(void * arg) {
                     cont_lectura++;
                 }else{
                     /*Ejecuta metrica*/
-                    int is_syn = calc_phase (lectura_b, lectura_a, lectura_t, size_lectura, max_real*0.5, min_real, &res_phase, args->anti);
+                    int is_syn = calc_phase (lectura_b, lectura_a, lectura_t, size_lectura, max_real_relativo, min_real, &res_phase, args->anti);
                     msg.ecm = res_phase;
                     if(cal_on){
                         if (is_syn==TRUE){
