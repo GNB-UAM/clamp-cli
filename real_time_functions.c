@@ -224,7 +224,8 @@ void * rt_thread(void * arg) {
 			close_device_comedi(d);
 	        pthread_exit(NULL);
 		}
-        period_disp_real = 0.5;
+		printf("Periodo disparo = %f\n", period_disp_real);
+        //period_disp_real = 0.5;
 	    calcula_escala (min_abs_model, max_model, min_abs_real, max_real, &scale_virtual_to_real, &scale_real_to_virtual, &offset_virtual_to_real, &offset_real_to_virtual);
         rafaga_viva_pts = args->freq * period_disp_real;
         args->s_points = args->rafaga_modelo_pts / rafaga_viva_pts;
@@ -409,9 +410,11 @@ void * rt_thread(void * arg) {
             msg.lat = ts_result.tv_sec * NSEC_PER_SEC + ts_result.tv_nsec;
 
             /*SINAPSIS Y CORRIENTE EN VIRTUAL TO REAL*/
-            syn_aux_params[SC_MIN] = min_abs_model * scale_virtual_to_real + offset_virtual_to_real;
+            if (args->type_syn==CHEMICAL)
+                syn_aux_params[SC_MIN] = min_abs_model * scale_virtual_to_real + offset_virtual_to_real;
             args->syn(args->vars[0] * scale_virtual_to_real + offset_virtual_to_real, ret_values[0], g_virtual_to_real, &c_model, syn_aux_params);
-            syn_aux_params[SC_MIN] = min_abs_model;
+            if (args->type_syn==CHEMICAL)
+                syn_aux_params[SC_MIN] = min_abs_model;
             args->syn(args->vars[0], ret_values[0] * scale_real_to_virtual + offset_real_to_virtual, g_virtual_to_real, &(msg.c_model), syn_aux_params);
 
             /*GUARDAR INFO*/
@@ -526,7 +529,8 @@ void * rt_thread(void * arg) {
         }
 
         /*CALCULO CORRIENTE E INTEGRACIÓN DEL MODELO*/
-        syn_aux_params[SC_MIN] = min_abs_real * scale_real_to_virtual + offset_real_to_virtual;
+        if (args->type_syn==CHEMICAL)
+            syn_aux_params[SC_MIN] = min_abs_real * scale_real_to_virtual + offset_real_to_virtual;
         args->syn(ret_values[0] * scale_real_to_virtual + offset_real_to_virtual, args->vars[0], g_real_to_virtual, &c_real, syn_aux_params);
         msg.c_real = c_real;
         args->func(args->dim, args->dt, args->vars, args->params, args->anti*c_real);
