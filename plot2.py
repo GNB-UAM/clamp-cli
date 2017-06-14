@@ -6,12 +6,9 @@ import argparse
 import math
 
 ap = argparse.ArgumentParser()
-ap.add_argument("-f", "--file", required=True,
-	help="date")
-#ap.add_argument("-n", "--name", required=True,
-	#help="output name")
-ap.add_argument("-t", "--title", required=True,
-	help="title")
+ap.add_argument("-f", "--file", required=True, help="date")
+#ap.add_argument("-n", "--name", required=True, help="output name")
+ap.add_argument("-t", "--title", required=True, help="title")
 args = vars(ap.parse_args())
 
 ##### FICHERO 1

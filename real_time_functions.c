@@ -413,9 +413,7 @@ void * rt_thread(void * arg) {
             if (args->type_syn==CHEMICAL)
                 syn_aux_params[SC_MIN] = min_abs_model * scale_virtual_to_real + offset_virtual_to_real;
             args->syn(args->vars[0] * scale_virtual_to_real + offset_virtual_to_real, ret_values[0], g_virtual_to_real, &c_model, syn_aux_params);
-            if (args->type_syn==CHEMICAL)
-                syn_aux_params[SC_MIN] = min_abs_model;
-            args->syn(args->vars[0], ret_values[0] * scale_real_to_virtual + offset_real_to_virtual, g_virtual_to_real, &(msg.c_model), syn_aux_params);
+            msg.c_model=c_model;
 
             /*GUARDAR INFO*/
             ts_substraction(&ts_start, &ts_iter, &ts_result);
@@ -532,7 +530,9 @@ void * rt_thread(void * arg) {
         if (args->type_syn==CHEMICAL)
             syn_aux_params[SC_MIN] = min_abs_real * scale_real_to_virtual + offset_real_to_virtual;
         args->syn(ret_values[0] * scale_real_to_virtual + offset_real_to_virtual, args->vars[0], g_real_to_virtual, &c_real, syn_aux_params);
-        msg.c_real = c_real;
+        if (args->type_syn==CHEMICAL)
+            syn_aux_params[SC_MIN] = min_abs_real * scale_real_to_virtual + offset_real_to_virtual;
+        args->syn(ret_values[0], args->vars[0]*scale_virtual_to_real + offset_virtual_to_real, g_real_to_virtual, &(msg.c_real), syn_aux_params);
         args->func(args->dim, args->dt, args->vars, args->params, args->anti*c_real);
     }
 
