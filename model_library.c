@@ -87,8 +87,8 @@ void ms_f (double * vars, double * ret, double * params, double v_pre) {
     
 
 double chem_fast (double v_post, double v_pre, double * g, double * aux) {
-    double e_syn = aux[SC_MIN] * 1.153846;
-    double v_f = aux[SC_MIN] * 0.769230;
+    double e_syn = aux[SC_MIN] - aux[SC_MIN] * 0.153846;
+    double v_f = aux[SC_MIN] + aux[SC_MIN] * 0.240;
     double s_f = aux[SC_BT] * 0.2;
 
     return ((*g) * (v_post - e_syn)) / (1.0 + exp(s_f * (v_f - v_pre)));
@@ -97,12 +97,12 @@ double chem_fast (double v_post, double v_pre, double * g, double * aux) {
 double chem_slow (double v_post, double * g, double * aux) {
     double vars[1] = {aux[SC_OLD]};
     double params[4];
-    double e_syn = aux[0] * 1.153846;
+    double e_syn = aux[SC_MIN] - aux[SC_MIN] * 0.153846;
 
     params[MS_K1] = 1;
     params[MS_K2] = 0.03;
     params[MS_SS] = aux[SC_BT];
-    params[MS_VS] = aux[SC_MIN] * 0.846153;
+    params[MS_VS] = aux[SC_MIN] + aux[SC_MIN] * 0.16;
 
     runge_kutta_6(&ms_f, 1, aux[SC_DT], vars, params, 0);
     aux[SC_OLD] = vars[0];
@@ -184,7 +184,7 @@ void rlk_f (double * vars, double * ret, double * params, double syn) {
     double y_old;
 
     ret[1] = vars[1] - params[MU_RLK] * (vars[0] + 1) + params[MU_RLK] * params[SIGMA_RLK];
-    y_old = vars[1] + syn * params[I_RLK];
+    y_old = vars[1] - syn * params[I_RLK];
 
 
     if (vars[0] <= 0) {

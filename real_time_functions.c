@@ -224,6 +224,7 @@ void * rt_thread(void * arg) {
 			close_device_comedi(d);
 	        pthread_exit(NULL);
 		}
+        period_disp_real = 0.5;
 	    calcula_escala (min_abs_model, max_model, min_abs_real, max_real, &scale_virtual_to_real, &scale_real_to_virtual, &offset_virtual_to_real, &offset_real_to_virtual);
         rafaga_viva_pts = args->freq * period_disp_real;
         args->s_points = args->rafaga_modelo_pts / rafaga_viva_pts;
@@ -272,10 +273,10 @@ void * rt_thread(void * arg) {
 			g_virtual_to_real = (double *) malloc (sizeof(double) * 2);
     		g_real_to_virtual = (double *) malloc (sizeof(double) * 2);
 
-    		g_virtual_to_real[G_FAST] = 0.3;
-    		g_virtual_to_real[G_SLOW] = 0.0;
+    		g_virtual_to_real[G_FAST] = 0.0;
+    		g_virtual_to_real[G_SLOW] = 0.1;
     		g_real_to_virtual[G_FAST] = 0.0;
-    		g_real_to_virtual[G_SLOW] = 0.6;
+    		g_real_to_virtual[G_SLOW] = 0.12;
     		msg.n_g = 2;
 
 
@@ -453,7 +454,7 @@ void * rt_thread(void * arg) {
                     }
 
                     if (is_syn==TRUE){
-                        printf("CALIBRATION END: g=%f\n", g_virtual_to_real[0]);
+                        //printf("CALIBRATION END: g=%f\n", g_virtual_to_real[0]);
                         cal_on=FALSE;
                     }else if(is_syn==FALSE){
                         change_g(&g_virtual_to_real[0]);
@@ -475,7 +476,7 @@ void * rt_thread(void * arg) {
                     msg.ecm = res_phase;
                     if(cal_on){
                         if (is_syn==TRUE){
-                            printf("CALIBRATION END: g=%f\n", g_virtual_to_real[0]);
+                            //printf("CALIBRATION END: g=%f\n", g_virtual_to_real[0]);
                             cal_on=FALSE;
                         }else if (is_syn==FALSE){
                             change_g(&g_virtual_to_real[0]);
@@ -488,7 +489,7 @@ void * rt_thread(void * arg) {
                 cont_6++;
                 if(cont_6==10000*3){
                     args->params[R_HR]+=0.0001;
-                    printf("%f\n", args->params[R_HR]);
+                    //printf("%f\n", args->params[R_HR]);
                     cont_6=0;
                 }
                 int ret_ecm = calc_ecm(args->vars[0] * scale_virtual_to_real + offset_virtual_to_real, ret_values[0], rafaga_viva_pts, &ecm_result);
