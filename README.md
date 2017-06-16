@@ -17,7 +17,7 @@ Universidad Autónoma de Madrid [(UAM)](http://www.uam.es)
 - Comedi and DAQ
 
 ## Install
-- Debian 9 guide
+- Debian 9 [guide](https://github.com/manurs/clamp-cli/wiki/Install-on-Debian-9)
 
 ## Usage
 
