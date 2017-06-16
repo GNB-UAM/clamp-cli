@@ -6,17 +6,37 @@ Each subfolder contains files for each experiment named like: 17h_22m_06s_x
 
 ==========================================================================
 
-resume file:
+Resume file:
+	- For each day folder you have a summary.txt
+	- In this file you can see the details of the experiment (freq., time, models...)
 
 
 ==========================================================================
 
 x=1 file format:
-
-
-
+	- Unix time
+	- Experiment time
+	- Index
+	- Latency
+	- Model voltage
+	- Model voltage scaled
+	- Current to the DAQ
+	- Current to the model
+	- Inpunt channel 1 
+	- ...
+	- Input channel n
+	- Output channel 1
+	- ...
+	- Output channel n
 
 
 ==========================================================================
 
-x=2 file format
+x=2 file format:
+    - Experiment time
+    - Index
+    - MSE
+    - Variance
+    - Conductance 1
+    - ...
+    - Conductance n

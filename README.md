@@ -14,21 +14,35 @@ Universidad Autónoma de Madrid [(UAM)](http://www.uam.es)
 
 ## Dependencies
 - Linux RT kernel (RT PREEMPT)
-  - RT PREEMPT is the main version with more features and tests (*) 
 - Comedi and DAQ
 
 ## Install
-- You need one of the Linux RT kernels (Download the appropriate folder)
-- Comedi
-- Debian 9 guide (all steps): ref
+- Debian 9 guide
 
 ## Usage
 
-## Data file details
-See ref
+```
+-f, --frequency: sample frequency (in KHz)
+-t, --time: simulation time (in ns)
+-m, --model: neural model (0 = Izhikevich, 1 = Hindmarsh-Rose, 2 = Rulkov Map)
+-s, --synapse: synapse type (0 = electrical, 1 = gradual)
+-a, --antiphase: turn on antiphase
+-c, --calibration: automatic calibration process
+ - Don't use with antiphase
+ - Synapse will be ignored
+ - Codes in Readme or github
+-I, --Important: mark experiment in summary.txt
+-i, --input_channels: input channels, separated by commas (ej: 0,2,3,7)
+-o, --output_channels: output channels, separated by commas (ej: 0,2,3,7)
+-h, --help: print this help
+```
 
-## Plot guide
-See ref
+
+## Data file details
+see data/about.txt
+
+## Plots
+Some python pyplot programs are included. The programs read the files properly and include the data in python variables. You can adapt the programs to plot what you need. 
 
 ## Neuron models
 - Hindmarsh–Rose
@@ -36,7 +50,5 @@ See ref
 - Rulkov map
 
 ## Synapsis models
-- Electrical
-
-### (*) Note:
-The validity of this guide is only guaranteed for RT PREEMPT version
+- Electrical synapse
+- Gradual chemical synapse

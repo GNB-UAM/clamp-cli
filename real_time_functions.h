@@ -49,6 +49,7 @@ typedef struct {
     int n_g;
     double ecm; 
     double extra;
+    char mensaje [100];
 } message;
 
 typedef struct {
@@ -80,6 +81,7 @@ typedef struct {
     char * filename;
     int calibration;
     int anti;
+    int model;
 } rt_args;
 
 
@@ -96,6 +98,7 @@ typedef struct {
     int time_var;
     int calibration;
     int anti;
+    int important;
 } writer_args;
 
 void ts_substraction (struct timespec * start, struct timespec * stop, struct timespec * result);

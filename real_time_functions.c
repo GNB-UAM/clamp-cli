@@ -84,6 +84,10 @@ void * writer_thread(void * arg) {
     f2 = fopen(filename_2, "w");
     f3 = fopen(filename_3, "a");
     
+    if (args->important==1){
+        fprintf(f3, "*********IMPORTANT RECORD********\n");
+    }
+
     fprintf(f3, "%s\nModel: ", args->filename);
     if(args->model==1){
         fprintf(f3, "Hindmarsh Rose\n");
@@ -228,7 +232,7 @@ void * rt_thread(void * arg) {
 	        pthread_exit(NULL);
 		}
 		printf("Periodo disparo = %f\n", period_disp_real);
-        //period_disp_real = 0.5;
+        period_disp_real = 0.27;
 	    calcula_escala (min_abs_model, max_model, min_abs_real, max_real, &scale_virtual_to_real, &scale_real_to_virtual, &offset_virtual_to_real, &offset_real_to_virtual);
         rafaga_viva_pts = args->freq * period_disp_real;
         args->s_points = args->rafaga_modelo_pts / rafaga_viva_pts;
@@ -251,7 +255,6 @@ void * rt_thread(void * arg) {
     /*printf("\n - Phase 1 OK\n - Phase 2 START\n\n");
     fflush(stdout);
     sleep(1);*/
-
 
     switch (args->type_syn) {
 		case ELECTRIC:
@@ -276,11 +279,21 @@ void * rt_thread(void * arg) {
 
 			g_virtual_to_real = (double *) malloc (sizeof(double) * 2);
     		g_real_to_virtual = (double *) malloc (sizeof(double) * 2);
+			if (args->model==0){
+                g_virtual_to_real[G_FAST] = 0.0;
+                g_virtual_to_real[G_SLOW] = 0.1;
+                g_real_to_virtual[G_FAST] = 0.0;
+                g_real_to_virtual[G_SLOW] = 0.12;
 
-    		g_virtual_to_real[G_FAST] = 0.0;
-    		g_virtual_to_real[G_SLOW] = 0.1;
-    		g_real_to_virtual[G_FAST] = 0.0;
-    		g_real_to_virtual[G_SLOW] = 0.12;
+            }else{
+                g_virtual_to_real[G_FAST] = 0.0;
+                g_virtual_to_real[G_SLOW] = 0.1;//0.02;
+                g_real_to_virtual[G_FAST] = 0.0;
+                g_real_to_virtual[G_SLOW] = 0.12;//0.12;
+            }
+    		
+
+    		
     		msg.n_g = 2;
 
 
@@ -392,6 +405,7 @@ void * rt_thread(void * arg) {
     }
     cont_lectura=0;
     int cont_6=0;
+    int counter_mapa=0;
 
 
     for (i = 0; i < args->points * args->s_points; i++) {
@@ -500,6 +514,15 @@ void * rt_thread(void * arg) {
                 msg.ecm = ecm_result;
                 msg.extra = args->params[R_HR];
                 
+            }else if(args->calibration==7){
+                //Mapa de conductancia 
+                counter_mapa++;
+                if (counter_mapa>=10000*10){
+                    counter_mapa=0;
+                    
+
+
+                }
             }
             
 

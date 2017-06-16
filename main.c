@@ -21,10 +21,11 @@ struct option main_opts[] = {
 	{"time", required_argument, NULL, 't'},
 	{"model", required_argument, NULL, 'm'},
 	{"synapse", required_argument, NULL, 's'},
-	{"input_channels", required_argument, NULL, 'i'},
-	{"output_channels", required_argument, NULL, 'o'},
 	{"calibration", required_argument, NULL, 'c'},
 	{"antiphase", required_argument, NULL, 'a'},
+	{"Important", required_argument, NULL, 'I'},
+	{"input_channels", required_argument, NULL, 'i'},
+	{"output_channels", required_argument, NULL, 'o'},
 	{"help", no_argument, NULL, 'h'},
 	{0},
 };
@@ -32,14 +33,15 @@ struct option main_opts[] = {
 void do_print_usage ()
 {
 	printf("usage:\tmain [OPTS]\n");
-	printf("\tOPTS:\t -f, --frequency: sample frequency (in Hz)\n");
+	printf("\tOPTS:\t -f, --frequency: sample frequency (in KHz)\n");
 	printf("\t\t -t, --time: simulation time (in ns)\n");
 	printf("\t\t -m, --model: neural model (0 = Izhikevich, 1 = Hindmarsh-Rose, 2 = Rulkov Map)\n");
 	printf("\t\t -s, --synapse: synapse type (0 = electrical, 1 = gradual)\n");
-	printf("\t\t -i, --input_channels: input channels, separated by commas (ej: 0,2,3,7)\n");
-	printf("\t\t -o, --output_channels: output channels, separated by commas (ej: 0,2,3,7)\n");
 	printf("\t\t -a, --antiphase: turn on antiphase\n");
 	printf("\t\t -c, --calibration: automatic calibration process\n\t\t\t - Don't use with antiphase\n\t\t\t - Synapse will be ignored\n \t\t\t - Codes in Readme or github\n");
+	printf("\t\t -I, --Important: mark experiment in summary.txt\n");
+	printf("\t\t -i, --input_channels: input channels, separated by commas (ej: 0,2,3,7)\n");
+	printf("\t\t -o, --output_channels: output channels, separated by commas (ej: 0,2,3,7)\n");
 	printf("\t\t -h, --help: print this help\n");
 }
 
@@ -112,9 +114,13 @@ int main (int argc, char * argv[]) {
 	r_args.out_channels = NULL;
 	r_args.anti=-1;
 	w_args.anti=-1;
+	w_args.important=0;
 
-    while ((ret = getopt_long(argc, argv, "f:t:m:s:i:o:c:a:h", main_opts, NULL)) >= 0) {
+    while ((ret = getopt_long(argc, argv, "I:f:t:m:s:i:o:c:a:h", main_opts, NULL)) >= 0) {
 		switch (ret) {
+		case 'I':
+			w_args.important = atoi(optarg);
+			break;
 		case 'f':
 			freq = atof(optarg) * 1000;
 			break;
@@ -327,6 +333,7 @@ int main (int argc, char * argv[]) {
     r_args.type_syn = synapse;
     r_args.freq = freq;
     r_args.filename = filename;
+    r_args.model = model;
 
     w_args.path = path;
     w_args.filename = filename;

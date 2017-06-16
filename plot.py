@@ -29,7 +29,7 @@ array = dataset.values
 data = array[1:,:]
 
 t_unix = data[:, 0]
-t_absol = data[:,1]
+t_absol = data[:,1] / 1000
 i = data[:,2]
 lat = data[:, 3]
 
@@ -49,14 +49,14 @@ for j in range(8 + n_in_chan, 8 + n_in_chan + n_out_chan):
 
 
 plt.figure(figsize=(12,6))
-plt.plot(t_absol, v_model_scaled, label="Model")
-plt.plot(t_absol, data_in[0], label="Real")
-plt.plot(t_absol, c_model, label="c_model", linewidth=0.1)
-plt.plot(t_absol, c_viva, label="c_real", linewidth=0.1)
+plt.plot(t_absol, v_model_scaled, label="Modelo Izhikevich")
+plt.plot(t_absol, data_in[0], label="Neurona electrónica")
+#plt.plot(t_absol, c_model, label="c_model", linewidth=0.1)
+#plt.plot(t_absol, c_viva, label="c_real", linewidth=0.1)
 plt.legend()
-plt.xlabel("Time (ms)")
-plt.ylabel("Voltage (mV)")
-plt.title("Chemical synapse connected neurons")
+plt.xlabel("Tiempo (s)")
+plt.ylabel("Voltaje")
+plt.title("Modelo escalado a señal externa")
 plt.show()
 
 '''
@@ -82,7 +82,7 @@ sleep = array[:,7]
 def plot_voltage(n_points, v):
 	plt.plot(t_absol[:n_points], v[:n_points], '-')
 	plt.title(args["title"])
-	plt.xlabel("Time (ms)")
+	plt.xlabel("Time (s)")
 	plt.ylabel("Voltage (mV)")
 	plt.legend()
 
