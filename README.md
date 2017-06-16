@@ -42,7 +42,7 @@ Universidad Autónoma de Madrid [(UAM)](http://www.uam.es)
 see data/about.txt
 
 ## Plots
-Some python pyplot programs are included. The programs read the files properly and include the data in python variables. You can adapt the programs to plot what you need. 
+Some Python Matplotlib programs are included. The programs read the files properly and include the data in python variables. You can adapt the programs to plot what you need. 
 
 ## Neuron models
 - Hindmarsh–Rose
