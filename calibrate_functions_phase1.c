@@ -68,8 +68,8 @@ int ini_recibido (double *min, double *min_abs, double *max, double *max_relativ
     *min_abs = min_abs_aux;
     *max = max_aux;
 
-    double porcentaje_mini = 0.15;
-    double porcentaje_maxi = 0.15;
+    double porcentaje_mini = 0.10;
+    double porcentaje_maxi = 0.4;
 
     if(mini>0){
         *min = mini + mini*porcentaje_mini;

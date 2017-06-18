@@ -30,7 +30,7 @@ Universidad Autónoma de Madrid [(UAM)](http://www.uam.es)
 -c, --calibration: automatic calibration process
  - Don't use with antiphase
  - Synapse will be ignored
- - Codes in Readme or github
+ - Number codes in github wiki
 -I, --Important: mark experiment in summary.txt
 -i, --input_channels: input channels, separated by commas (ej: 0,2,3,7)
 -o, --output_channels: output channels, separated by commas (ej: 0,2,3,7)
@@ -42,7 +42,7 @@ Universidad Autónoma de Madrid [(UAM)](http://www.uam.es)
 see data/about.txt
 
 ## Plots
-Some Python Matplotlib programs are included. The programs read the files properly and include the data in python variables. You can adapt the programs to plot what you need. 
+Some Python Matplotlib programs are included. The programs read the files properly and include the data in Python variables. You can adapt the programs to plot what you need. 
 
 ## Neuron models
 - Hindmarsh–Rose
