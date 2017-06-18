@@ -231,7 +231,9 @@ void * rt_thread(void * arg) {
 			close_device_comedi(d);
 	        pthread_exit(NULL);
 		}
-		printf("Periodo disparo = %f\n", period_disp_real);
+		//printf("Periodo disparo = %f\n", period_disp_real);
+        /*fflush(stdout);
+        sleep(1);*/
         period_disp_real = 0.27;
 	    calcula_escala (min_abs_model, max_model, min_abs_real, max_real, &scale_virtual_to_real, &scale_real_to_virtual, &offset_virtual_to_real, &offset_real_to_virtual);
         rafaga_viva_pts = args->freq * period_disp_real;
@@ -252,8 +254,8 @@ void * rt_thread(void * arg) {
     msg2.id = 1;
     msgsnd(args->msqid, (struct msgbuf *) &msg2, sizeof(message_s_points) - sizeof(long), IPC_NOWAIT);
 
-    /*printf("\n - Phase 1 OK\n - Phase 2 START\n\n");
-    fflush(stdout);
+    //printf("\n - Phase 1 OK\n - Phase 2 START\n\n");
+    /*fflush(stdout);
     sleep(1);*/
 
     switch (args->type_syn) {
@@ -262,8 +264,8 @@ void * rt_thread(void * arg) {
 
 			g_virtual_to_real = (double *) malloc (sizeof(double) * 1);
     		g_real_to_virtual = (double *) malloc (sizeof(double) * 1);
-			g_virtual_to_real[0] = 0.3;
-    		g_real_to_virtual[0] = 0.3;
+			g_virtual_to_real[0] = 0.5;
+    		g_real_to_virtual[0] = 0.5;
             if(args->calibration != 0 && args->calibration != 6){
                 g_virtual_to_real[0] = 0.0;
                 g_real_to_virtual[0] = 0.0;
@@ -474,7 +476,7 @@ void * rt_thread(void * arg) {
                     if (is_syn==TRUE){
                         //printf("CALIBRATION END: g=%f\n", g_virtual_to_real[0]);
                         cal_on=FALSE;
-                    }else if(is_syn==FALSE){
+                    }else if(is_syn==FALSE && cal_on==TRUE){
                         change_g(&g_virtual_to_real[0]);
                         change_g(&g_real_to_virtual[0]);
                     }
@@ -506,7 +508,7 @@ void * rt_thread(void * arg) {
             }else if(args->calibration==6){
                 cont_6++;
                 if(cont_6==10000*3){
-                    args->params[R_HR]+=0.0001;
+                    args->params[R_HR]+=0.0006;
                     //printf("%f\n", args->params[R_HR]);
                     cont_6=0;
                 }

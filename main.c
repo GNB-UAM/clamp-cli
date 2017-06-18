@@ -34,7 +34,7 @@ void do_print_usage ()
 {
 	printf("usage:\tmain [OPTS]\n");
 	printf("\tOPTS:\t -f, --frequency: sample frequency (in KHz)\n");
-	printf("\t\t -t, --time: simulation time (in ns)\n");
+	printf("\t\t -t, --time: simulation time (in s)\n");
 	printf("\t\t -m, --model: neural model (0 = Izhikevich, 1 = Hindmarsh-Rose, 2 = Rulkov Map)\n");
 	printf("\t\t -s, --synapse: synapse type (0 = electrical, 1 = gradual)\n");
 	printf("\t\t -a, --antiphase: turn on antiphase\n");

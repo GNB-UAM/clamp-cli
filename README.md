@@ -23,7 +23,7 @@ Universidad Autónoma de Madrid [(UAM)](http://www.uam.es)
 
 ```
 -f, --frequency: sample frequency (in KHz)
--t, --time: simulation time (in ns)
+-t, --time: simulation time (in s)
 -m, --model: neural model (0 = Izhikevich, 1 = Hindmarsh-Rose, 2 = Rulkov Map)
 -s, --synapse: synapse type (0 = electrical, 1 = gradual)
 -a, --antiphase: turn on antiphase
