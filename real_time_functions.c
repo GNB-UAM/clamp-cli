@@ -428,6 +428,16 @@ void * rt_thread(void * arg) {
     int cal_7=TRUE;
 
 
+    /*PULSOS DE SINCRONIZACION*/
+    out_values[0] = 0;
+    out_values[1] = -10;
+    write_comedi(session, args->n_out_chan, args->out_channels, out_values);
+    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts_target, NULL);
+    ts_add_time(&ts_target, 0, args->period);
+    out_values[1] = 10;
+    write_comedi(session, args->n_out_chan, args->out_channels, out_values);
+
+
     for (i = 0; i < args->points * args->s_points; i++) {
         /*TOCA INTERACCION*/
         if (i % args->s_points == 0) {
