@@ -59,10 +59,35 @@ def c8():
 	g2 = array[:,6]
 	g3 = array[:,7]
 
-	f, axarr = plt.subplots(2, sharex=True, figsize=(8.5,4.1))
+	f, axarr = plt.subplots(3, sharex=True, figsize=(8.5,6.1))
+
+	time_a, res_a, min_a, max_a = periodo(v_live)
+	time_b, res_b, min_b, max_b = periodo(v_model_scaled)
+
+	res_times = []
+	#Recorremos elementos
+	for i in range(len(time_a)):
+		#Para cada elementos recorremos su entorno
+		tmp_min = 99999
+		for j in range(50):
+			if i-j>=0 and i-j<len(time_b):
+				tmp = abs(time_a[i]-time_b[i-j])
+				if tmp<tmp_min:
+					tmp_min=tmp
+			if i+j<len(time_b):
+				tmp = abs(time_a[i]-time_b[i+j])
+				if tmp<tmp_min:
+					tmp_min=tmp
+		res_times.append(tmp_min)
 
 	axarr[0].plot(t, v_model_scaled, label="Modelo", linewidth=0.4)
 	axarr[0].plot(t, v_live, label="Viva", linewidth=0.4)
+	axarr[0].plot(time_a, res_a, 'o', linewidth=0.4)
+	axarr[0].plot(time_b, res_b, 'o', linewidth=0.4)
+	axarr[0].axhline(y=max_a, color='C1', linestyle='--', linewidth=0.2)
+	axarr[0].axhline(y=min_a, color='C1', linestyle='--', linewidth=0.2)
+	axarr[0].axhline(y=max_b, color='C2', linestyle='--', linewidth=0.2)
+	axarr[0].axhline(y=min_b, color='C2', linestyle='--', linewidth=0.2)
 	axarr[0].set_title("Voltaje")
 	axarr[0].legend()
 
@@ -71,10 +96,57 @@ def c8():
 	axarr[1].set_title("Conductancias")
 	axarr[1].legend()
 
+	t2 = np.linspace(0, t[len(t)-1], num=len(res_times))
+	axarr[2].plot(t2, res_times)
+	axarr[2].set_title("Desfase")
+	axarr[2].legend()
+
 	plt.xlabel("Tiempo (s)")
 	plt.tight_layout()
 	plt.show()
 
+def periodo(array):
+	min=99999
+	max=-99999
+	v = array
+	for elem in array:
+		if elem>max:
+			max=elem
+		elif elem<min:
+			min=elem
+
+	porcentaje_mini = 0.25
+	porcentaje_maxi = 0.4
+	if min>0:
+		min = min + min*porcentaje_mini;
+	else:
+		min = min - min*porcentaje_mini;
+	
+	if max>0:
+		max = max - max*porcentaje_maxi;
+	else:
+		max = max + max*porcentaje_maxi;
+
+	up = False
+	if v[0]>max:
+		up = True
+
+	changes=0
+	times=[]
+	res=[]
+
+	for i in range(len(v)):
+		if up==False and v[i]>max:
+			changes+=1
+			times.append(i/10000)
+			res.append(max)
+			up = True
+		elif up==True and v[i]<min:
+			up = False
+
+	t = np.linspace(0,len(v), len(v))
+	t = t / 10000
+	return times, res, min, max
 
 def c6():
 
