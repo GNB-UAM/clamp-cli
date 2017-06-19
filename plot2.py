@@ -15,6 +15,7 @@ args = vars(ap.parse_args())
 dataset = pd.read_csv(args["file"]+"_1.txt", delimiter=' ', header=1)
 array = dataset.values
 data = array[1:,:]
+data = data[:-1]
 
 t = t_absol = data[:,1] / 1000
 v_model_scaled = data[:, 5]
@@ -24,12 +25,56 @@ v_live = data[:, 8]
 
 dataset = pd.read_csv(args["file"]+"_2.txt", delimiter=' ', header=None)
 array = dataset.values
+array = array[:-1]
 
 time = array[:, 0] / 1000
 index = array[:,1]
 ecm = array[:,2]
 extra = array[:,3]
 g0 = array[:,4]
+
+def c7():
+	g1 = array[:,5]
+	g2 = array[:,6]
+	g3 = array[:,7]
+
+	f, axarr = plt.subplots(2, sharex=True, figsize=(8.5,4.1))
+
+	axarr[0].plot(t, v_model_scaled, label="Modelo", linewidth=0.4)
+	axarr[0].plot(t, v_live, label="Viva", linewidth=0.4)
+	axarr[0].set_title("Voltaje")
+	axarr[0].legend()
+
+	axarr[1].plot(time, g0)
+	axarr[1].plot(time, g3)
+	axarr[1].set_title("Conductancias")
+	axarr[1].legend()
+
+	plt.xlabel("Tiempo (s)")
+	plt.tight_layout()
+	plt.show()
+
+def c8():
+	g1 = array[:,5]
+	g2 = array[:,6]
+	g3 = array[:,7]
+
+	f, axarr = plt.subplots(2, sharex=True, figsize=(8.5,4.1))
+
+	axarr[0].plot(t, v_model_scaled, label="Modelo", linewidth=0.4)
+	axarr[0].plot(t, v_live, label="Viva", linewidth=0.4)
+	axarr[0].set_title("Voltaje")
+	axarr[0].legend()
+
+	axarr[1].plot(time, ecm)
+	axarr[1].plot(time, extra)
+	axarr[1].set_title("Conductancias")
+	axarr[1].legend()
+
+	plt.xlabel("Tiempo (s)")
+	plt.tight_layout()
+	plt.show()
+
 
 def c6():
 
@@ -94,3 +139,9 @@ if args["calibration"]=="1":
 
 if args["calibration"]=="6":
 	c6()
+
+if args["calibration"]=="7":
+	c7()
+
+if args["calibration"]=="8":
+	c8()

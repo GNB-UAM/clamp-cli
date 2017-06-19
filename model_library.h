@@ -45,7 +45,8 @@
 #define SC_OLD 2
 #define SC_BT 3
 
-
+#define SC_MS_K1 4
+#define SC_MS_K2 5
 
 
 /* INTEGRATION FUNCTIONS */

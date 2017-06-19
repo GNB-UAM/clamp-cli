@@ -260,6 +260,9 @@ void * rt_thread(void * arg) {
     /*fflush(stdout);
     sleep(1);*/
 
+    double ini_k1=0.4;
+    double ini_k2=0.01;
+
     switch (args->type_syn) {
 		case ELECTRIC:
 			syn_aux_params = NULL;
@@ -276,30 +279,42 @@ void * rt_thread(void * arg) {
 
 			break;
 		case CHEMICAL:
-			syn_aux_params = (double *) malloc (sizeof(double) * 4);
+			syn_aux_params = (double *) malloc (sizeof(double) * 6);
 			syn_aux_params[SC_DT] = args->dt;
 			syn_aux_params[SC_OLD] = 0;
             syn_aux_params[SC_BT] = period_disp_real;
+            syn_aux_params[SC_MS_K1] = 1;//1;
+            syn_aux_params[SC_MS_K2] = 0.03;//0.03;
 
 			g_virtual_to_real = (double *) malloc (sizeof(double) * 2);
     		g_real_to_virtual = (double *) malloc (sizeof(double) * 2);
 			if (args->model==0){
+                g_virtual_to_real[G_FAST] = 0.3;
+                g_virtual_to_real[G_SLOW] = 0.0;
+                g_real_to_virtual[G_FAST] = 0.0;
+                g_real_to_virtual[G_SLOW] = 0.3;
+
+            }else {
                 g_virtual_to_real[G_FAST] = 0.0;
                 g_virtual_to_real[G_SLOW] = 0.1;
-                g_real_to_virtual[G_FAST] = 0.0;
-                g_real_to_virtual[G_SLOW] = 0.12;
+                g_real_to_virtual[G_FAST] = 0.3;
+                g_real_to_virtual[G_SLOW] = 0.0;
+            }
 
-            }else{
+            if(args->calibration == 7){
                 g_virtual_to_real[G_FAST] = 0.0;
-                g_virtual_to_real[G_SLOW] = 0.1;//0.02;
+                g_virtual_to_real[G_SLOW] = 0.0;
                 g_real_to_virtual[G_FAST] = 0.0;
-                g_real_to_virtual[G_SLOW] = 0.12;//0.12;
+                g_real_to_virtual[G_SLOW] = 0.0;
+            }
+
+        
+            if(args->calibration == 8){
+                syn_aux_params[SC_MS_K1] = ini_k1;//1;
+                syn_aux_params[SC_MS_K2] = ini_k2;//0.03;
             }
     		
-
-    		
     		msg.n_g = 2;
-
 
 			break;
 		default:
@@ -410,6 +425,7 @@ void * rt_thread(void * arg) {
     cont_lectura=0;
     int cont_6=0;
     int counter_mapa=0;
+    int cal_7=TRUE;
 
 
     for (i = 0; i < args->points * args->s_points; i++) {
@@ -522,14 +538,55 @@ void * rt_thread(void * arg) {
                 msg.extra = args->params[R_HR];
                 
             }else if(args->calibration==7){
-                //Mapa de conductancia 
-                counter_mapa++;
-                if (counter_mapa>=10000*10){
-                    counter_mapa=0;
-                    
-
-
+                if (cal_7==TRUE){
+                    double paso_7 = 0.3;//0.2; //0.3
+                    double max_7 = 1;//1.8; //2.7
+                    //Mapa de conductancia 
+                    counter_mapa++;
+                    if (counter_mapa>=10000*10){ //Cada 10s hay cambio
+                        counter_mapa=0;
+                        g_virtual_to_real[G_SLOW] += paso_7;
+                        if (g_virtual_to_real[G_SLOW]>max_7){
+                            g_virtual_to_real[G_SLOW] = 0;
+                            g_real_to_virtual[G_FAST] += paso_7;
+                            if(g_real_to_virtual[G_FAST]>=max_7){
+                                printf("FIN\n");
+                                printf("Apuntar: %d\n", cont_send);
+                                g_virtual_to_real[G_SLOW] = 0;
+                                g_real_to_virtual[G_FAST] = 0;
+                                cal_7=FALSE;
+                            }
+                        }
+                    }
                 }
+            }else if(args->calibration==8){
+                if (cal_7==TRUE){
+                    double paso_k1 = 0.3;
+                    double paso_k2 = 0.01;
+                    double max_k1 = 1.6;
+                    double max_k2 = 0.05;
+
+                    //Mapa de k 
+                    counter_mapa++;
+                    if (counter_mapa>=10000*10){ //Cada 10s hay cambio
+                        counter_mapa=0;
+                        syn_aux_params[SC_MS_K1]+=paso_k1;
+                        if(syn_aux_params[SC_MS_K1]>=max_k1){
+                            syn_aux_params[SC_MS_K1]=ini_k1;
+                            syn_aux_params[SC_MS_K2]+=paso_k2;
+                            if( syn_aux_params[SC_MS_K2]>=max_k2){
+                                printf("FIN\n");
+                                printf("Apuntar: %d\n", cont_send);
+                                syn_aux_params[SC_MS_K1]=0;
+                                syn_aux_params[SC_MS_K2]=0;
+                                cal_7=FALSE;
+                            }
+                        }
+                    }
+                }
+                msg.ecm=syn_aux_params[SC_MS_K1];
+                msg.extra=syn_aux_params[SC_MS_K2];
+
             }
             
 

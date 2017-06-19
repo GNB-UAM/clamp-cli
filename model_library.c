@@ -118,8 +118,8 @@ double chem_slow (double v_post, double * g, double * aux) {
 	}
 	
 
-    params[MS_K1] = 1;
-    params[MS_K2] = 0.03;
+    params[MS_K1] = aux[SC_MS_K1];//1;
+    params[MS_K2] = aux[SC_MS_K2];//0.03;
     params[MS_SS] = aux[SC_BT];
 
     runge_kutta_6(&ms_f, 1, aux[SC_DT], vars, params, 0);
