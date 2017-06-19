@@ -42,12 +42,14 @@ int calc_ecm (double v_a, double v_b, int life_burst_points, double *ecm_result)
 
 /*
 */
+double old_res_calc_phase = -1;
+
 int calc_phase (double * v_a, double * v_b, double * t, int size, double th_up, double th_on, double * result, int antifase){
 
 	double limit = 3; //ns
 
 	if (antifase==1){
-		limit=500;
+		limit=50;
 	}else{
 		limit=3;
 	}
@@ -99,14 +101,19 @@ int calc_phase (double * v_a, double * v_b, double * t, int size, double th_up, 
 	//fclose(ff);
 
 	//res a y b incluyen los tiempos de disparo
-	double a = res[i] = fabs(res_a[0] - res_b[0]);
-	double b = res[i] = fabs(res_a[1] - res_b[0]);
-	double c = res[i] = fabs(res_a[0] - res_b[1]);
+	/*double a = fabs(res_a[0] - res_b[0]);
+	double b = fabs(res_a[1] - res_b[0]);
+	double c = fabs(res_a[0] - res_b[1]);
 	int salto_a=0;
-	int salto_b=0;
+	
 	if (b<a && b<c){
 		salto_a=1;
 	}else if(c<a && c<b){
+		salto_b=1;
+	}*/
+	int salto_b=0;
+	if(res_a[1]-res_b[0]<0){
+		//estan al reves
 		salto_b=1;
 	}
 
@@ -115,7 +122,7 @@ int calc_phase (double * v_a, double * v_b, double * t, int size, double th_up, 
 		if (res_a[i]==0  || res_b[i]==0){
 			break;
 		}
-		res[i] = fabs(res_a[i+salto_a] - res_b[i+salto_b]);
+		res[i] = fabs(res_a[i] - res_b[i+salto_b]);
 		count++;
 	}
 
@@ -133,11 +140,18 @@ int calc_phase (double * v_a, double * v_b, double * t, int size, double th_up, 
 		var += tmp*tmp;
 	}
 
+	if ( old_res_calc_phase !=-1){
+		if ( old_res_calc_phase<200 && fabs(old_res_calc_phase-var)>100){
+			//Se empezo a medir cortando una rafaga
+			return ERR;
+		}
+	}
+
 	var = var / count;
 
 	*result = var;
 
-	//printf("var = %f\n", var);
+	old_res_calc_phase = var;
 
 	/***SINCRO***/
 	if (var<limit){

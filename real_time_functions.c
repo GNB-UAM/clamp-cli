@@ -125,6 +125,8 @@ void * writer_thread(void * arg) {
 
     fprintf(f3, "Burst duration = %f s\n", msg2.period_disp_real);
 
+    printf("Periodo disparo = %f\n", msg2.period_disp_real);
+
     fprintf(f3, "\n=================================\n\n");
 
     //fprintf(f3, "%s\nModel: %d\nSynapse: %d\nFreq: %d ns\n\n\n", args->filename, args->model, args->type_syn, args->freq);
@@ -264,8 +266,8 @@ void * rt_thread(void * arg) {
 
 			g_virtual_to_real = (double *) malloc (sizeof(double) * 1);
     		g_real_to_virtual = (double *) malloc (sizeof(double) * 1);
-			g_virtual_to_real[0] = 0.5;
-    		g_real_to_virtual[0] = 0.5;
+			g_virtual_to_real[0] = 0.3;
+    		g_real_to_virtual[0] = 0.1;
             if(args->calibration != 0 && args->calibration != 6){
                 g_virtual_to_real[0] = 0.0;
                 g_real_to_virtual[0] = 0.0;
@@ -489,11 +491,14 @@ void * rt_thread(void * arg) {
                     lectura_b[cont_lectura]=args->vars[0] * scale_virtual_to_real + offset_virtual_to_real;
                     lectura_a[cont_lectura]=ret_values[0];
                     lectura_t[cont_lectura]=msg.t_absol;
+                    msg.ecm = res_phase;
                     cont_lectura++;
                 }else{
                     /*Ejecuta metrica*/
                     int is_syn = calc_phase (lectura_b, lectura_a, lectura_t, size_lectura, max_real_relativo, min_real, &res_phase, args->anti);
                     msg.ecm = res_phase;
+
+                    //printf("var = %f\n", msg.ecm);
                     if(cal_on){
                         if (is_syn==TRUE){
                             //printf("CALIBRATION END: g=%f\n", g_virtual_to_real[0]);

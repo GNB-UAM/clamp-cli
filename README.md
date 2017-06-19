@@ -39,7 +39,7 @@ Universidad Autónoma de Madrid [(UAM)](http://www.uam.es)
 
 
 ## Data file details
-see data/about.txt
+See data/about.txt
 
 ## Plots
 Some Python Matplotlib programs are included. The programs read the files properly and include the data in Python variables. You can adapt the programs to plot what you need. 
