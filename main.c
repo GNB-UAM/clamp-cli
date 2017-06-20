@@ -186,7 +186,7 @@ int main (int argc, char * argv[]) {
 				r_args.anti=-1;
 				w_args.anti=-1;
 			}else if(mode_auto_cal == 7 || mode_auto_cal == 8){
-				model=0;
+				model=2;
 				r_args.anti=-1;
 				w_args.anti=-1;
 			}

@@ -236,7 +236,7 @@ void * rt_thread(void * arg) {
 		//printf("Periodo disparo = %f\n", period_disp_real);
         /*fflush(stdout);
         sleep(1);*/
-        period_disp_real = 0.27;
+        //period_disp_real = 0.27;
 	    calcula_escala (min_abs_model, max_model, min_abs_real, max_real, &scale_virtual_to_real, &scale_real_to_virtual, &offset_virtual_to_real, &offset_real_to_virtual);
         rafaga_viva_pts = args->freq * period_disp_real;
         args->s_points = args->rafaga_modelo_pts / rafaga_viva_pts;
@@ -269,8 +269,8 @@ void * rt_thread(void * arg) {
 
 			g_virtual_to_real = (double *) malloc (sizeof(double) * 1);
     		g_real_to_virtual = (double *) malloc (sizeof(double) * 1);
-			g_virtual_to_real[0] = 0.3;
-    		g_real_to_virtual[0] = 0.1;
+			g_virtual_to_real[0] = 0.02;
+    		g_real_to_virtual[0] = 0.2;
             if(args->calibration != 0 && args->calibration != 6){
                 g_virtual_to_real[0] = 0.0;
                 g_real_to_virtual[0] = 0.0;
@@ -290,8 +290,8 @@ void * rt_thread(void * arg) {
     		g_real_to_virtual = (double *) malloc (sizeof(double) * 2);
 			if (args->model==0){
                 g_virtual_to_real[G_FAST] = 0.0;
-                g_virtual_to_real[G_SLOW] = 0.3;
-                g_real_to_virtual[G_FAST] = 0.3;
+                g_virtual_to_real[G_SLOW] = 0.02;
+                g_real_to_virtual[G_FAST] = 0.2;
                 g_real_to_virtual[G_SLOW] = 0.0;
 
             }else {
@@ -549,17 +549,20 @@ void * rt_thread(void * arg) {
                 
             }else if(args->calibration==7){
                 if (cal_7==TRUE){
-                    double paso_7 = 0.3;//0.2; //0.3
-                    double max_7 = 1;//1.8; //2.7
+                    double paso_fast = 0.2;//0.2; //0.3
+                    double max_fast = 1;//1.8; //2.7
+                    double paso_slow = 0.01;
+                    double max_slow = 0.11;
+
                     //Mapa de conductancia 
                     counter_mapa++;
                     if (counter_mapa>=10000*10){ //Cada 10s hay cambio
                         counter_mapa=0;
-                        g_virtual_to_real[G_SLOW] += paso_7;
-                        if (g_virtual_to_real[G_SLOW]>max_7){
+                        g_virtual_to_real[G_SLOW] += paso_slow;
+                        if (g_virtual_to_real[G_SLOW]>max_slow){
                             g_virtual_to_real[G_SLOW] = 0;
-                            g_real_to_virtual[G_FAST] += paso_7;
-                            if(g_real_to_virtual[G_FAST]>=max_7){
+                            g_real_to_virtual[G_FAST] += paso_fast;
+                            if(g_real_to_virtual[G_FAST]>=max_fast){
                                 printf("FIN\n");
                                 printf("Apuntar: %d\n", cont_send);
                                 g_virtual_to_real[G_SLOW] = 0;
@@ -572,9 +575,9 @@ void * rt_thread(void * arg) {
             }else if(args->calibration==8){
                 if (cal_7==TRUE){
                     double paso_k1 = 0.3;
-                    double paso_k2 = 0.01;
+                    double paso_k2 = 0.02;
                     double max_k1 = 1.6;
-                    double max_k2 = 0.05;
+                    double max_k2 = 0.1;
 
                     //Mapa de k 
                     counter_mapa++;

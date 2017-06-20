@@ -118,13 +118,5 @@ def periodo(array):
 	plt.show()
 
 
-
-
-
-
-
-
-	
-
 #filtrado(array)
 periodo(array)
