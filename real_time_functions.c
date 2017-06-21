@@ -437,7 +437,6 @@ void * rt_thread(void * arg) {
     out_values[1] = 10;
     write_comedi(session, args->n_out_chan, args->out_channels, out_values);
 
-
     for (i = 0; i < args->points * args->s_points; i++) {
         /*TOCA INTERACCION*/
         if (i % args->s_points == 0) {
