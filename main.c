@@ -299,7 +299,7 @@ int main (int argc, char * argv[]) {
 	}
 
 	/*Messages queue*/
-    key_q = ftok ("/bin/ls", 28);
+    /*key_q = ftok ("/bin/ls", 28);
     if (key_q == (key_t) -1) {
         perror("Error obtaining message queue key.");
         exit(EXIT_FAILURE);
@@ -309,6 +309,11 @@ int main (int argc, char * argv[]) {
     if (msqid == -1) {
         perror("Error obtaining message queue ID.");
         return(0);
+    }*/
+
+    if (open_queue((void *) &msqid) != OK) {
+    	printf("Error opening queue.\n");
+    	return ERR;
     }
 
     t = time(NULL);
@@ -363,7 +368,12 @@ int main (int argc, char * argv[]) {
     pthread_join(rt, NULL);
     pthread_join(writer, NULL);
 
-    msgctl (msqid, IPC_RMID, (struct msqid_ds *)NULL);
+    //msgctl (msqid, IPC_RMID, (struct msqid_ds *)NULL);
+    if (close_queue((void *) &msqid) != OK) {
+    	printf("Error closing queue.\n");
+    	return ERR;
+    }
+
     free(vars);
     free(params);
 	return 1;

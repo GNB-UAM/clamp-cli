@@ -50,7 +50,7 @@ void copy_1d_array (double * src, double * dst, int n_elems) {
 
 void * writer_thread(void * arg) {
     message msg;
-    message_s_points msg2;
+    message msg2;
     pthread_t id;
     FILE * f1, * f2, *f3;
     writer_args * args;
@@ -117,15 +117,15 @@ void * writer_thread(void * arg) {
 
     fprintf(f3, "Calibration mode = %d\n", args->calibration);
 
-    msgrcv(args->msqid, (struct msgbuf *)&msg2, sizeof(message_s_points) - sizeof(long), 1, 0);
+    receive_from_queue((void *) &args->msqid, &msg2);
     
-    s_points = msg2.s_points;
+    s_points = msg2.i;
 
     fprintf(f3, "Model jump points = %d\n", s_points);
 
-    fprintf(f3, "Burst duration = %f s\n", msg2.period_disp_real);
+    fprintf(f3, "Burst duration = %f s\n", msg2.t_unix);
 
-    printf("Periodo disparo = %f\n", msg2.period_disp_real);
+    printf("Periodo disparo = %f\n", msg2.t_unix);
 
     fprintf(f3, "\n=================================\n\n");
 
@@ -136,7 +136,7 @@ void * writer_thread(void * arg) {
 
     for (i = 0; i < (5 * args->freq + args->points) * s_points; i++) {
         if (i % s_points == 0) {
-            msgrcv(args->msqid, (struct msgbuf *)&msg, sizeof(message) - sizeof(long), 1, 0);
+            receive_from_queue((void *) &args->msqid, &msg);
 
             if (i == 0) fprintf(f1, "%d %d\n", msg.n_in_chan, msg.n_out_chan);
 
@@ -180,7 +180,7 @@ void * rt_thread(void * arg) {
     rt_args * args;
     struct timespec ts_target, ts_iter, ts_result, ts_start;
     message msg;
-    message_s_points msg2;
+    message msg2;
     pthread_t id;
 
     double max_model, min_model, min_abs_model;
@@ -251,10 +251,10 @@ void * rt_thread(void * arg) {
     }
 
     /*CALIBRADO TEMPORAL*/
-    msg2.s_points = args->s_points;
-    msg2.period_disp_real = period_disp_real;
+    msg2.i = args->s_points;
+    msg2.t_unix = period_disp_real;
     msg2.id = 1;
-    msgsnd(args->msqid, (struct msgbuf *) &msg2, sizeof(message_s_points) - sizeof(long), IPC_NOWAIT);
+    send_to_queue((void *) &args->msqid, &msg2);
 
     //printf("\n - Phase 1 OK\n - Phase 2 START\n\n");
     /*fflush(stdout);
@@ -397,7 +397,7 @@ void * rt_thread(void * arg) {
             msg.g_real_to_virtual = g_real_to_virtual;
             msg.g_virtual_to_real = g_virtual_to_real;
 
-            msgsnd(args->msqid, (struct msgbuf *) &msg, sizeof(message) - sizeof(long), IPC_NOWAIT);
+            send_to_queue((void *) &args->msqid, &msg);
 
             ts_add_time(&ts_target, 0, args->period);
 
@@ -603,7 +603,7 @@ void * rt_thread(void * arg) {
             
 
             /*GUARDAR INFO*/
-            msgsnd(args->msqid, (struct msgbuf *) &msg, sizeof(message) - sizeof(long), IPC_NOWAIT);
+            send_to_queue((void *) &args->msqid, &msg);
 
             /*TIEMPO*/
             ts_add_time(&ts_target, 0, args->period);

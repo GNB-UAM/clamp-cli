@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include "comedi_functions.h"
-#include "time_management.h"
+#include "time_functions.h"
 
 #define ERR -1
 #define OK 0

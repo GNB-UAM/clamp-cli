@@ -1,19 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include <sched.h>
-#include <sys/mman.h>
-#include <pthread.h>
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/msg.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <getopt.h>
-#include "time_management.h"
+#include "time_functions.h"
 //#include "comedi_functions.h"
 #include "model_library.h"
+#include "queue_functions.h"
 #include "calibrate_functions_phase1.h"
 #include "calibrate_functions_phase2.h"
 
@@ -22,41 +10,12 @@
 #define MAX_LAT (900000)
 #define CORE (0)
 
-#define ERR -1
-#define OK 0
-#define TRUE 1
-#define FALSE 0
 
-typedef struct {
-    long id;
-    double t_unix;
-    double t_absol;
-    int i;
-
-    /* Fichero 1*/ 
-    long lat;
-    double v_model;
-    double v_model_scaled;
-    double c_model;
-    double c_real;
-    int n_in_chan;
-    int n_out_chan;
-    double * data_in;
-    double * data_out;
-    /* Fichero 2*/
-    double * g_real_to_virtual;
-    double * g_virtual_to_real;
-    int n_g;
-    double ecm; 
-    double extra;
-    char mensaje [100];
-} message;
-
-typedef struct {
+/*typedef struct {
     long id;
     int s_points;
     double period_disp_real;
-} message_s_points;
+} message_s_points;*/
 
 
 typedef struct {
