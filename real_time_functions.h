@@ -29,7 +29,7 @@ typedef struct {
     int type_syn;
     long points;
     int s_points;
-    int msqid;
+    void * msqid;
     int period;
     int n_in_chan;
     int n_out_chan;
@@ -47,7 +47,7 @@ typedef struct {
 typedef struct {
     char * filename;
     char * path;
-    int msqid;
+    void * msqid;
     long points;
     int s_points;
     int type_syn;

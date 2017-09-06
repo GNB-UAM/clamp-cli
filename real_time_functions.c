@@ -117,7 +117,7 @@ void * writer_thread(void * arg) {
 
     fprintf(f3, "Calibration mode = %d\n", args->calibration);
 
-    receive_from_queue((void *) &args->msqid, &msg2);
+    receive_from_queue(args->msqid, &msg2);
     
     s_points = msg2.i;
 
@@ -136,7 +136,7 @@ void * writer_thread(void * arg) {
 
     for (i = 0; i < (5 * args->freq + args->points) * s_points; i++) {
         if (i % s_points == 0) {
-            receive_from_queue((void *) &args->msqid, &msg);
+            receive_from_queue(args->msqid, &msg);
 
             if (i == 0) fprintf(f1, "%d %d\n", msg.n_in_chan, msg.n_out_chan);
 
@@ -254,7 +254,7 @@ void * rt_thread(void * arg) {
     msg2.i = args->s_points;
     msg2.t_unix = period_disp_real;
     msg2.id = 1;
-    send_to_queue((void *) &args->msqid, &msg2);
+    send_to_queue(args->msqid, &msg2);
 
     //printf("\n - Phase 1 OK\n - Phase 2 START\n\n");
     /*fflush(stdout);
@@ -397,7 +397,7 @@ void * rt_thread(void * arg) {
             msg.g_real_to_virtual = g_real_to_virtual;
             msg.g_virtual_to_real = g_virtual_to_real;
 
-            send_to_queue((void *) &args->msqid, &msg);
+            send_to_queue(args->msqid, &msg);
 
             ts_add_time(&ts_target, 0, args->period);
 
@@ -603,7 +603,7 @@ void * rt_thread(void * arg) {
             
 
             /*GUARDAR INFO*/
-            send_to_queue((void *) &args->msqid, &msg);
+            send_to_queue(args->msqid, &msg);
 
             /*TIEMPO*/
             ts_add_time(&ts_target, 0, args->period);

@@ -77,7 +77,7 @@ int main (int argc, char * argv[]) {
 	pthread_attr_t attr;
 	pthread_t writer, rt;
 	int err;
-	int msqid;
+	void * msqid;
 	FILE * f;
 
 	time_t t;
@@ -311,7 +311,7 @@ int main (int argc, char * argv[]) {
         return(0);
     }*/
 
-    if (open_queue((void *) &msqid) != OK) {
+    if (open_queue(&msqid) != OK) {
     	printf("Error opening queue.\n");
     	return ERR;
     }
@@ -369,7 +369,7 @@ int main (int argc, char * argv[]) {
     pthread_join(writer, NULL);
 
     //msgctl (msqid, IPC_RMID, (struct msqid_ds *)NULL);
-    if (close_queue((void *) &msqid) != OK) {
+    if (close_queue(&msqid) != OK) {
     	printf("Error closing queue.\n");
     	return ERR;
     }
