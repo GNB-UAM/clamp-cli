@@ -74,7 +74,7 @@ void parse_channels (char * str, int ** channels, int * n_chan) {
 
 int main (int argc, char * argv[]) {
 	key_t key_q;
-	pthread_attr_t attr;
+	pthread_attr_t attr_rt, attr_wr;
 	pthread_t writer, rt;
 	int err;
 	void * msqid;
@@ -354,14 +354,16 @@ int main (int argc, char * argv[]) {
     w_args.freq = freq;
     w_args.time_var = time_var;
 
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    pthread_attr_init(&attr_rt);
+    pthread_attr_init(&attr_wr);
+    pthread_attr_setdetachstate(&attr_rt, PTHREAD_CREATE_JOINABLE);
+    pthread_attr_setdetachstate(&attr_wr, PTHREAD_CREATE_JOINABLE);
 
-    err = pthread_create(&(writer), &attr, &writer_thread, (void *) &w_args);
+    err = pthread_create(&(writer), &attr_wr, &writer_thread, (void *) &w_args);
     if (err != 0)
         printf("Can't create thread :[%s]", strerror(err));
 
-    err = pthread_create(&(rt), &attr, &rt_thread, (void *) &r_args);
+    err = pthread_create(&(rt), &attr_rt, &rt_thread, (void *) &r_args);
     if (err != 0)
         printf("Can't create thread :[%s]", strerror(err));
 

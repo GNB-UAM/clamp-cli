@@ -170,6 +170,8 @@ void * writer_thread(void * arg) {
     free(filename_1);
     free(filename_2);
     free(filename_3);
+
+    printf("End writer\n");
     pthread_exit(NULL);
 }
 
@@ -394,8 +396,13 @@ void * rt_thread(void * arg) {
                 }
             }
 
-            msg.g_real_to_virtual = g_real_to_virtual;
-            msg.g_virtual_to_real = g_virtual_to_real;
+            /*msg.g_real_to_virtual = g_real_to_virtual;
+            msg.g_virtual_to_real = g_virtual_to_real;*/
+            msg.g_real_to_virtual = (double *) malloc (sizeof(double) * msg.n_g);
+            msg.g_virtual_to_real = (double *) malloc (sizeof(double) * msg.n_g);
+
+            copy_1d_array(g_real_to_virtual, msg.g_real_to_virtual, msg.n_g);
+            copy_1d_array(g_virtual_to_real, msg.g_virtual_to_real, msg.n_g);
 
             send_to_queue(args->msqid, &msg);
 
@@ -651,5 +658,7 @@ void * rt_thread(void * arg) {
     free(lectura_a);
     free(lectura_b);
     free(lectura_t);
+
+    printf("End rt\n");
     pthread_exit(NULL);
 }
