@@ -68,8 +68,6 @@ int open_queue (void ** msqid) {
 
 	sprintf(name, "/rt_queue%d\0", getpid());
 
-	printf("%d\n", sizeof(message));
-
 	attrp = NULL;
     attr.mq_maxmsg = 3500;
     attr.mq_msgsize = sizeof(message);
@@ -82,8 +80,6 @@ int open_queue (void ** msqid) {
 		perror("Error opening queue");
 		return ERR;
 	}
-
-	printf("%d\n", id);
 
 	*msqid = (void *)malloc(sizeof(mqd_t));
 	*(mqd_t*)(*msqid) = id;

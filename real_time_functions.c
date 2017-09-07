@@ -208,7 +208,7 @@ void * writer_thread(void * arg) {
     free(filename_2);
     free(filename_3);
 
-    printf("End writer\n");
+    printf("End writer_thread.\n");
     pthread_exit(NULL);
 }
 
