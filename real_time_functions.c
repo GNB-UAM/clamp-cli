@@ -54,7 +54,7 @@ void * writer_thread(void * arg) {
     pthread_t id;
     FILE * f1, * f2, *f3;
     writer_args * args;
-    int i, j;
+    int i = 0, j;
     int s_points;
 
     args = arg;
@@ -174,7 +174,10 @@ void * writer_thread(void * arg) {
 
         if (msg.id == 2) break;
 
-        if (i == 0) fprintf(f1, "%d %d\n", msg.n_in_chan, msg.n_out_chan);
+        if (i == 0) {
+            fprintf(f1, "%d %d\n", msg.n_in_chan, msg.n_out_chan);
+            i++;
+        }
 
         fprintf(f1, "%f %f %d %ld %f %f %f %f", msg.t_unix, msg.t_absol, msg.i, msg.lat, msg.v_model, msg.v_model_scaled, msg.c_model, msg.c_real);
         fprintf(f2, "%f %d", msg.t_absol, msg.i);
