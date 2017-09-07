@@ -60,9 +60,9 @@ void * writer_thread(void * arg) {
     args = arg;
     id = pthread_self();
 
-    char * filename_1 = (char *) malloc (sizeof(char)*(strlen(args->filename)+6));
-    char * filename_2 = (char *) malloc (sizeof(char)*(strlen(args->filename)+6));
-    char * filename_3 = (char *) malloc (sizeof(char)*(strlen(args->path)+12));
+    char * filename_1 = (char *) malloc (sizeof(char)*(strlen(args->filename)+7));
+    char * filename_2 = (char *) malloc (sizeof(char)*(strlen(args->filename)+7));
+    char * filename_3 = (char *) malloc (sizeof(char)*(strlen(args->path)+13));
 
     if (sprintf(filename_1, "%s_1.txt", args->filename) < 0) {
         printf("Error creating file 1 name\n;");
@@ -134,9 +134,11 @@ void * writer_thread(void * arg) {
 
     /*****************/
 
-    for (i = 0; i < (5 * args->freq + args->points) * s_points; i++) {
+    /*for (i = 0; i < (5 * args->freq + args->points) * s_points; i++) {
         if (i % s_points == 0) {
             receive_from_queue(args->msqid, &msg);
+
+            if (msg.id == 2) break;
 
             if (i == 0) fprintf(f1, "%d %d\n", msg.n_in_chan, msg.n_out_chan);
 
@@ -165,6 +167,39 @@ void * writer_thread(void * arg) {
             free(msg.g_virtual_to_real);
             free(msg.g_real_to_virtual);
         }
+    }*/
+
+    while(1) {
+        receive_from_queue(args->msqid, &msg);
+
+        if (msg.id == 2) break;
+
+        if (i == 0) fprintf(f1, "%d %d\n", msg.n_in_chan, msg.n_out_chan);
+
+        fprintf(f1, "%f %f %d %ld %f %f %f %f", msg.t_unix, msg.t_absol, msg.i, msg.lat, msg.v_model, msg.v_model_scaled, msg.c_model, msg.c_real);
+        fprintf(f2, "%f %d", msg.t_absol, msg.i);
+
+        for (j = 0; j < msg.n_in_chan; ++j) {
+            fprintf(f1, " %f", msg.data_in[j]);
+        }
+
+        for (j = 0; j < msg.n_out_chan; ++j) {
+            fprintf(f1, " %f", msg.data_out[j]);
+        }
+        fprintf(f1, "\n");
+
+        fprintf(f2, " %f", msg.ecm);
+        fprintf(f2, " %f", msg.extra);
+        for (j = 0; j < msg.n_g; ++j) {
+            fprintf(f2, " %f", msg.g_real_to_virtual[j]);
+            fprintf(f2, " %f", msg.g_virtual_to_real[j]);
+        }
+        fprintf(f2, "\n");
+        
+        free(msg.data_in);
+        free(msg.data_out);
+        free(msg.g_virtual_to_real);
+        free(msg.g_real_to_virtual);
     }
     
     fclose(f1);
@@ -180,7 +215,7 @@ void * writer_thread(void * arg) {
 
 
 void * rt_thread(void * arg) {
-    int i, cont_send=0;
+    int i, cont_send = 0, lost_msg = 0;
     rt_args * args;
     struct timespec ts_target, ts_iter, ts_result, ts_start;
     message msg;
@@ -406,7 +441,7 @@ void * rt_thread(void * arg) {
             copy_1d_array(g_real_to_virtual, msg.g_real_to_virtual, msg.n_g);
             copy_1d_array(g_virtual_to_real, msg.g_virtual_to_real, msg.n_g);
 
-            send_to_queue(args->msqid, &msg);
+            if (send_to_queue(args->msqid, &msg) == ERR) lost_msg++;
 
             ts_add_time(&ts_target, 0, args->period);
 
@@ -617,7 +652,7 @@ void * rt_thread(void * arg) {
             
 
             /*GUARDAR INFO*/
-            send_to_queue(args->msqid, &msg);
+            if (send_to_queue(args->msqid, &msg) == ERR) lost_msg++;
 
             /*TIEMPO*/
             ts_add_time(&ts_target, 0, args->period);
@@ -657,6 +692,12 @@ void * rt_thread(void * arg) {
     }
     write_comedi(session, args->n_out_chan, args->out_channels, out_values);
     close_device_comedi(d);
+
+    msg.id = 2;
+    if (send_to_queue(args->msqid, &msg) == ERR) {
+        perror("Closing message not sent");
+    }
+
     free(syn_aux_params);
     free(g_virtual_to_real);
     free(g_real_to_virtual);
@@ -666,6 +707,6 @@ void * rt_thread(void * arg) {
     free(lectura_b);
     free(lectura_t);
 
-    printf("End rt\n");
+    printf("End of rt_thread. Not sent messages: %d\n", lost_msg);
     pthread_exit(NULL);
 }

@@ -25,5 +25,5 @@ typedef struct {
     int n_g;
     double ecm; 
     double extra;
-    char mensaje [100];
+    //char mensaje [100];
 } message;

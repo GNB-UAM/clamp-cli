@@ -1,6 +1,6 @@
 CC = gcc
 LIBS_COMEDI = -g -lcomedi -lm
-LIBS_RT = -lpthread -D_GNU_SOURCE
+LIBS_RT = -lpthread -D_GNU_SOURCE -lrt
 
 main: main.o model_library.o real_time_functions.o comedi_functions.o calibrate_functions_phase1.o calibrate_functions_phase2.o time_functions.o queue_functions.o
 	$(CC) -o main main.o model_library.o real_time_functions.o comedi_functions.o calibrate_functions_phase1.o calibrate_functions_phase2.o time_functions.o queue_functions.o $(LIBS_COMEDI) $(LIBS_RT)
@@ -31,3 +31,7 @@ queue_functions.o: queue_functions.c queue_functions.h types.h
 
 clean:
 	rm -f main *.o
+
+mclan:
+	rm -f main *.o
+	make

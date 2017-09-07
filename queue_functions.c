@@ -1,7 +1,7 @@
 #include "queue_functions.h"
 
 
-int open_queue (void ** msqid) {
+/*int open_queue (void ** msqid) {
 	int ret = 0;
 	key_t key_q;
 
@@ -50,6 +50,89 @@ int close_queue (void ** msqid) {
 
 
 	if (msgctl(id, IPC_RMID, (struct msqid_ds *)NULL) != 0) {
+		return ERR;
+	}
+
+	free(*msqid);
+
+	return OK;
+}*/
+
+
+
+int open_queue (void ** msqid) {
+	mqd_t id;
+	struct mq_attr attr, *attrp;
+	int size = 11 + sizeof(pid_t);
+	char name[size];
+
+	sprintf(name, "/rt_queue%d\0", getpid());
+
+	printf("%d\n", sizeof(message));
+
+	attrp = NULL;
+    attr.mq_maxmsg = 3500;
+    attr.mq_msgsize = sizeof(message);
+    attrp = &attr;
+
+	//id = mq_open("rt_queue", O_CREAT|O_RDWR|O_NONBLOCK, S_IRWXU, attrp);
+	id = mq_open(name, O_CREAT | O_RDWR | O_NONBLOCK, 0666, attrp);
+
+	if (id == -1) {
+		perror("Error opening queue");
+		return ERR;
+	}
+
+	printf("%d\n", id);
+
+	*msqid = (void *)malloc(sizeof(mqd_t));
+	*(mqd_t*)(*msqid) = id;
+
+    return OK;
+}
+
+int send_to_queue (void * msqid, message * msg) {
+	mqd_t id = *(mqd_t*)msqid;
+
+	if (mq_send(id, (const char *) msg, sizeof(*msg), 0) == -1) {
+		//perror("Error sending message to queue");
+		return ERR;
+	}
+
+	return OK;
+}
+
+
+
+int receive_from_queue (void * msqid, message * msg) {
+	mqd_t id = *(mqd_t*)msqid;
+
+	while(1) {
+		if (mq_receive(id, (char *) msg, sizeof(*msg), 0) != -1) {
+			break;
+		}
+	}
+
+	return OK;
+}
+
+int close_queue (void ** msqid) {
+	mqd_t id = *(mqd_t*)(*msqid);
+	int size = 11 + sizeof(pid_t);
+	char name[size];
+
+	sprintf(name, "/rt_queue%d\0", getpid());
+
+	printf("Closing queue with id: %d\n", id);
+
+
+	if (mq_close(id) != 0) {
+		perror("Error closing queue");
+		return ERR;
+	}
+
+	if (mq_unlink(name) != 0) {
+		perror("Error removing queue");
 		return ERR;
 	}
 

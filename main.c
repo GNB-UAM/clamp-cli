@@ -82,10 +82,10 @@ int main (int argc, char * argv[]) {
 
 	time_t t;
 	struct tm tm;
-	char path [18];
-	char path_b [18];
-	char hour [12];
-	char filename [22];
+	char path [19];
+	char path_b [19];
+	char hour [13];
+	char filename [23];
 
 
 	writer_args w_args;
@@ -367,8 +367,9 @@ int main (int argc, char * argv[]) {
     if (err != 0)
         printf("Can't create thread :[%s]", strerror(err));
 
-    pthread_join(rt, NULL);
     pthread_join(writer, NULL);
+    pthread_join(rt, NULL);
+    
 
     //msgctl (msqid, IPC_RMID, (struct msqid_ds *)NULL);
     if (close_queue(&msqid) != OK) {
