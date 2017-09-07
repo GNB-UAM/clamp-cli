@@ -162,6 +162,8 @@ void * writer_thread(void * arg) {
             
             free(msg.data_in);
             free(msg.data_out);
+            free(msg.g_virtual_to_real);
+            free(msg.g_real_to_virtual);
         }
     }
     
@@ -478,12 +480,17 @@ void * rt_thread(void * arg) {
             out_values[1] = msg.v_model_scaled;
 
             /*GUARDAR INFO*/
-            msg.g_real_to_virtual = g_real_to_virtual;
-            msg.g_virtual_to_real = g_virtual_to_real;
+            /*msg.g_real_to_virtual = g_real_to_virtual;
+            msg.g_virtual_to_real = g_virtual_to_real;*/
             msg.data_in = (double *) malloc (sizeof(double) * args->n_in_chan);
             msg.data_out = (double *) malloc (sizeof(double) * args->n_out_chan);
             copy_1d_array(ret_values, msg.data_in, args->n_in_chan);
             copy_1d_array(out_values, msg.data_out, args->n_out_chan);
+
+            msg.g_real_to_virtual = (double *) malloc (sizeof(double) * msg.n_g);
+            msg.g_virtual_to_real = (double *) malloc (sizeof(double) * msg.n_g);
+            copy_1d_array(g_real_to_virtual, msg.g_real_to_virtual, msg.n_g);
+            copy_1d_array(g_virtual_to_real, msg.g_virtual_to_real, msg.n_g);
 
             /*ENVIO POR LA TARJETA*/
             write_comedi(session, args->n_out_chan, args->out_channels, out_values);
