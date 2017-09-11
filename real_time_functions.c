@@ -1,5 +1,6 @@
 #include "real_time_functions.h"
 
+
 /*REAL-TIME FUNCTIONS */
 void prepare_real_time (pthread_t id) {
 	struct sched_param param;
@@ -36,6 +37,36 @@ void prepare_real_time (pthread_t id) {
 }
 
 /* THREADS FUNCTIONS */
+
+void free_pointers (int n, ...) {
+    va_list l;
+    void ** arg;
+    int i = 0;
+    va_start(l, n);
+    
+    
+
+    for(i = 0; i < n; i++) {
+        arg = va_arg(l, void**);
+        if(*arg != NULL) {
+            free(*arg);
+            *arg = NULL;
+        }
+    }
+    va_end(l);
+}
+
+
+void handler_rt (int sig) {
+  if (sig == SIGINT) {
+
+  }
+}
+
+void handler_writer (int sig) {
+  if (sig == SIGINT)
+    printf("received SIGINT\n");
+}
 
 void copy_1d_array (double * src, double * dst, int n_elems) {
     int i;
