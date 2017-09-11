@@ -363,9 +363,9 @@ void * rt_thread(void * arg) {
     		g_real_to_virtual = (double *) malloc (sizeof(double) * 2);
 			if (args->model==0){
                 g_virtual_to_real[G_FAST] = 0.0;
-                g_virtual_to_real[G_SLOW] = 0.02;
-                g_real_to_virtual[G_FAST] = 0.2;
-                g_real_to_virtual[G_SLOW] = 0.0;
+                g_virtual_to_real[G_SLOW] = 0.01;
+                g_real_to_virtual[G_FAST] = 0.0;
+                g_real_to_virtual[G_SLOW] = 0.02;
 
             }else {
                 g_virtual_to_real[G_FAST] = 0.0;

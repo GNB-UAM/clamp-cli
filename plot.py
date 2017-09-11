@@ -50,7 +50,7 @@ for j in range(8 + n_in_chan, 8 + n_in_chan + n_out_chan):
 
 plt.figure(figsize=(12,6))
 plt.plot(t_absol, v_model_scaled, label="Modelo Izhikevich")
-#plt.plot(t_absol, data_in[0], label="Neurona electrónica")
+plt.plot(t_absol, data_in[0], label="Neurona electrónica")
 plt.plot(t_absol, c_model, label="c_model", linewidth=0.1)
 plt.plot(t_absol, c_viva, label="c_real", linewidth=0.1)
 plt.legend()

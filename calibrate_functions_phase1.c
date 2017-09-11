@@ -3,7 +3,7 @@
 int ini_recibido (double *min, double *min_abs, double *max, double *max_relativo, double *period_signal, Comedi_session session, int chan, int period, int freq, char* filename){
     
     /*TIEMPO OBSERVACION*/
-    int segs_observo = 4; 
+    int segs_observo = 10; 
 
     /*VARIABLES CALCULO DE RANGOS*/
     int i=0;
@@ -68,8 +68,11 @@ int ini_recibido (double *min, double *min_abs, double *max, double *max_relativ
     *min_abs = min_abs_aux;
     *max = max_aux;
 
-    double porcentaje_mini = 0.10;
-    double porcentaje_maxi = 0.4;
+    double porcentaje_mini = 0.15;
+    double porcentaje_maxi = 0.15;
+
+    printf("MIN_ABS= %f\n", min_abs_aux);
+    printf("MAX_ABS= %f\n", max_aux);
 
     if(mini>0){
         *min = mini + mini*porcentaje_mini;
@@ -83,6 +86,9 @@ int ini_recibido (double *min, double *min_abs, double *max, double *max_relativ
         *max_relativo = maxi + maxi*porcentaje_maxi;
     }
 
+    printf("MIN_RE= %f\n", *min);
+    printf("MAX_RE= %f\n", *max_relativo);
+
     /*GUARDAR DATOS LEIDOS*/
 
     /*PERIODO DE LA SEÑAL*/
@@ -92,6 +98,8 @@ int ini_recibido (double *min, double *min_abs, double *max, double *max_relativ
     //printf("Perido signal = %f\n", *period_signal);
     array_to_file(lectura, size_lectura, filename, "lectura_ini");
     array_to_file(convolution, size_lectura, filename, "lectura_ini_filtro");
+
+    printf("PERIODO= %f\n", *period_signal);
 
     /*PRINTF DEBUG*/
     /*printf("LECTURA INICIAL\n");
@@ -159,7 +167,8 @@ double signal_period_2(int seg_observacion, double * signal, int size, double th
     if (signal[0]>th_up)
         up=TRUE;
 
-    int changes=0, i=0;
+    double changes=0;
+    int i=0;
     for (i=0; i<size; i++){
         if(up==FALSE && signal[i]>th_up){
             //Cambio de tendencia
@@ -170,6 +179,7 @@ double signal_period_2(int seg_observacion, double * signal, int size, double th
         }
 
     }
+    printf("CHANGES = %f\n", changes);
     double period = 1.0 / (changes/seg_observacion);
     return period;
 }

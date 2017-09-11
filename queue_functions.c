@@ -69,7 +69,7 @@ int open_queue (void ** msqid) {
 	sprintf(name, "/rt_queue%d\0", getpid());
 
 	attrp = NULL;
-    attr.mq_maxmsg = 3500;
+    attr.mq_maxmsg = 2000;
     attr.mq_msgsize = sizeof(message);
     attrp = &attr;
 
