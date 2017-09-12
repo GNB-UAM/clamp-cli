@@ -5,6 +5,7 @@
 !about.txt
 figures/*.png
 main
+clamp-cli_preempt
 
 # Prerequisites
 *.d
