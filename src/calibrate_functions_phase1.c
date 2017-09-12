@@ -71,8 +71,8 @@ int ini_recibido (double *min, double *min_abs, double *max, double *max_relativ
     double porcentaje_mini = 0.15;
     double porcentaje_maxi = 0.15;
 
-    printf("MIN_ABS= %f\n", min_abs_aux);
-    printf("MAX_ABS= %f\n", max_aux);
+    //printf("MIN_ABS= %f\n", min_abs_aux);
+    //printf("MAX_ABS= %f\n", max_aux);
 
     if(mini>0){
         *min = mini + mini*porcentaje_mini;
@@ -86,8 +86,8 @@ int ini_recibido (double *min, double *min_abs, double *max, double *max_relativ
         *max_relativo = maxi + maxi*porcentaje_maxi;
     }
 
-    printf("MIN_RE= %f\n", *min);
-    printf("MAX_RE= %f\n", *max_relativo);
+    //printf("MIN_RE= %f\n", *min);
+    //printf("MAX_RE= %f\n", *max_relativo);
 
     /*GUARDAR DATOS LEIDOS*/
 
@@ -99,13 +99,7 @@ int ini_recibido (double *min, double *min_abs, double *max, double *max_relativ
     array_to_file(lectura, size_lectura, filename, "lectura_ini");
     array_to_file(convolution, size_lectura, filename, "lectura_ini_filtro");
 
-    printf("PERIODO= %f\n", *period_signal);
-
-    /*PRINTF DEBUG*/
-    /*printf("LECTURA INICIAL\n");
-    printf("  max_leido=%f ", maxi);
-    printf("// min_leido=%f ", mini);
-    printf("// min_leido_rel=%f\n\n", mini*0.55);*/
+    //printf("PERIODO= %f\n", *period_signal);
 
     return OK;
 }
