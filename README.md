@@ -2,7 +2,7 @@
 Command line program to make neuron hybrid circuits
 
 ### Developed by
-Rodrigo Amaducci
+Rodrigo Amaducci (rodrigo.amaducci@uam.es - [scholar](https://scholar.google.es/citations?user=Lq4ogOQAAAAJ))
 
 Manuel Reyes-Sanchez (manuel.reyes@uam.es - [scholar](https://scholar.google.es/citations?user=JlKzj1cAAAAJ))
 
