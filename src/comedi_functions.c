@@ -1,4 +1,4 @@
-#include "comedi_functions.h"
+#include "../includes/comedi_functions.h"
 
 comedi_t * open_device_comedi (char * dev_name) {
 	comedi_t *device;

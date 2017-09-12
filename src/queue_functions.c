@@ -1,4 +1,4 @@
-#include "queue_functions.h"
+#include "../includes/queue_functions.h"
 
 
 /*int open_queue (void ** msqid) {

@@ -1,4 +1,4 @@
-#include "time_functions.h"
+#include "../includes/time_functions.h"
 /* TIME MANAGEMENT FUNCTIONS */
 
 void ts_substraction (struct timespec * start, struct timespec * stop, struct timespec * result) {

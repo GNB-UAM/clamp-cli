@@ -1,4 +1,4 @@
-#include "calibrate_functions_phase1.h"
+#include "../includes/calibrate_functions_phase1.h"
 
 int ini_recibido (double *min, double *min_abs, double *max, double *max_relativo, double *period_signal, Comedi_session session, int chan, int period, int freq, char* filename){
     

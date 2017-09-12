@@ -1,19 +1,5 @@
-#include "model_library.h"
-#include "real_time_functions.h"
-
-/*
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-
-dataset = pd.read_csv("salida_test.txt", delimiter=' ', header=None)
-array = dataset.values
-
-v = array[:,0]
-
-plt.plot(v)
-plt.show()
-*/
+#include "../includes/rt_thread_functions.h"
+#include "../includes/writer_thread_functions.h"
 
 
 struct option main_opts[] = {
