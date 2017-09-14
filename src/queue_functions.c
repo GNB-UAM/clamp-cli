@@ -59,7 +59,6 @@ int close_queue (void ** msqid) {
 }*/
 
 
-
 int open_queue (void ** msqid) {
 	mqd_t id;
 	struct mq_attr attr, *attrp;
@@ -135,4 +134,23 @@ int close_queue (void ** msqid) {
 	free(*msqid);
 
 	return OK;
+}
+
+
+
+/* Auxiliar function */
+void free_pointers (int n, ...) {
+    va_list l;
+    void ** arg;
+    int i = 0;
+    va_start(l, n);
+     
+    for(i = 0; i < n; i++) {
+        arg = va_arg(l, void**);
+        if(*arg != NULL){
+            free(*arg);
+            *arg = NULL;
+        }
+    }
+    va_end(l);
 }

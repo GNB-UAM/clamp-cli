@@ -2,6 +2,31 @@
 #include "../includes/writer_thread_functions.h"
 
 
+/* Global variables */
+double * params = NULL;
+double * vars = NULL;
+void * msqid = NULL;
+pthread_t writer, rt;
+
+void clamp_cli_cleanup () {
+
+	if (pthread_kill(writer, SIGUSR2) != 0) perror("Error sending SIGUSR2 at main");
+	if (pthread_kill(rt, SIGUSR1) != 0) perror("Error sending SIGUSR1 at main");
+
+	/*pthread_join(writer, NULL);
+    pthread_join(rt, NULL);
+    
+    if (msqid != NULL) {
+    	if (close_queue(&msqid) != OK) printf("Error closing queue.\n");
+    }
+    
+
+    free_pointers(2, &vars, &params);*/
+
+    return 1;
+}
+
+
 struct option main_opts[] = {
 	{"frequency", required_argument, NULL, 'f'},
 	{"time", required_argument, NULL, 't'},
@@ -61,9 +86,7 @@ void parse_channels (char * str, int ** channels, int * n_chan) {
 int main (int argc, char * argv[]) {
 	key_t key_q;
 	pthread_attr_t attr_rt, attr_wr;
-	pthread_t writer, rt;
 	int err;
-	void * msqid;
 	FILE * f;
 
 	time_t t;
@@ -76,9 +99,6 @@ int main (int argc, char * argv[]) {
 
 	writer_args w_args;
 	rt_args r_args;
-
-	double * params;
-	double * vars;
 
 	double rafaga_modelo_pts_hr;
 	double rafaga_modelo_pts_iz;
@@ -94,6 +114,8 @@ int main (int argc, char * argv[]) {
 	int mode_auto_cal = 0;
 	int c_a = FALSE;
 
+	sigset_t set;
+
 	r_args.n_in_chan = 0;
 	r_args.n_out_chan = 0;
 	r_args.in_channels = NULL;
@@ -101,6 +123,7 @@ int main (int argc, char * argv[]) {
 	r_args.anti=-1;
 	w_args.anti=-1;
 	w_args.important=0;
+
 
     while ((ret = getopt_long(argc, argv, "I:f:t:m:s:i:o:c:a:h", main_opts, NULL)) >= 0) {
 		switch (ret) {
@@ -297,11 +320,6 @@ int main (int argc, char * argv[]) {
         return(0);
     }*/
 
-    if (open_queue(&msqid) != OK) {
-    	printf("Error opening queue.\n");
-    	return ERR;
-    }
-
     t = time(NULL);
 	tm = *localtime(&t);
 	sprintf(path, "data/%dy_%dm_%dd", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
@@ -322,6 +340,21 @@ int main (int argc, char * argv[]) {
 
 	printf(" - File:\n%s%s\n", filename, "_1.txt");
 
+
+    pthread_attr_init(&attr_rt);
+    pthread_attr_init(&attr_wr);
+    pthread_attr_setdetachstate(&attr_rt, PTHREAD_CREATE_JOINABLE);
+    pthread_attr_setdetachstate(&attr_wr, PTHREAD_CREATE_JOINABLE);
+
+    sigemptyset(&set);
+    sigaddset(&set, SIGINT);
+    if (pthread_sigmask(SIG_BLOCK, &set, NULL) != 0) printf("Error blocking SIGINT at main.\n");
+
+    if (open_queue(&msqid) != OK) {
+    	printf("Error opening queue.\n");
+    	return ERR;
+    }
+
     r_args.msqid = msqid;
     r_args.points = time_var * freq;
     r_args.period = 1 / freq * NSEC_PER_SEC;
@@ -329,6 +362,8 @@ int main (int argc, char * argv[]) {
     r_args.freq = freq;
     r_args.filename = filename;
     r_args.model = model;
+    r_args.in_channels = NULL;
+    r_args.out_channels = NULL;
 
     w_args.path = path;
     w_args.filename = filename;
@@ -340,11 +375,6 @@ int main (int argc, char * argv[]) {
     w_args.freq = freq;
     w_args.time_var = time_var;
 
-    pthread_attr_init(&attr_rt);
-    pthread_attr_init(&attr_wr);
-    pthread_attr_setdetachstate(&attr_rt, PTHREAD_CREATE_JOINABLE);
-    pthread_attr_setdetachstate(&attr_wr, PTHREAD_CREATE_JOINABLE);
-
     err = pthread_create(&(writer), &attr_wr, &writer_thread, (void *) &w_args);
     if (err != 0)
         printf("Can't create thread :[%s]", strerror(err));
@@ -353,17 +383,21 @@ int main (int argc, char * argv[]) {
     if (err != 0)
         printf("Can't create thread :[%s]", strerror(err));
 
+    if (pthread_sigmask(SIG_UNBLOCK, &set, NULL) != 0) printf("Error unblocking SIGINT at main.\n");
+    if (signal(SIGINT, clamp_cli_cleanup) == SIG_ERR) printf("Error catching SIGINT at main.\n");
+
+
     pthread_join(writer, NULL);
     pthread_join(rt, NULL);
     
 
-    //msgctl (msqid, IPC_RMID, (struct msqid_ds *)NULL);
-    if (close_queue(&msqid) != OK) {
-    	printf("Error closing queue.\n");
-    	return ERR;
+    if (msqid != NULL) {
+    	if (close_queue(&msqid) != OK) printf("Error closing queue.\n");
     }
 
     free(vars);
     free(params);
+
+    printf(PRINT_YELLOW "\nclamp_cli finished." PRINT_RESET "\n");
 	return 1;
 }

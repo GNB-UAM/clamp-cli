@@ -1,5 +1,45 @@
 #include "../includes/rt_thread_functions.h"
 
+/* Global variables */
+comedi_t * d = NULL;
+Comedi_session * session = NULL;
+rt_args * args;
+message msg;
+double * syn_aux_params = NULL;
+double * g_virtual_to_real = NULL;
+double * g_real_to_virtual = NULL;
+double * lectura_a = NULL;
+double * lectura_b = NULL;
+double * lectura_t = NULL;
+double * ret_values = NULL;
+double * out_values = NULL;
+
+
+void rt_cleanup () {
+    int i = 0;
+
+    printf("\n" PRINT_RED "SIGUSR1 termination to rt_thread." PRINT_RESET "\n");
+
+    if (session != NULL) {
+        for (i = 0; i < args->n_out_chan; i++) {
+            out_values[i] = 0;
+        }
+        
+        write_comedi(session, args->n_out_chan, args->out_channels, out_values);
+    }
+
+    if (d != NULL) {
+        free_pointers(1, &session);
+        close_device_comedi(d);
+    }
+
+    free_pointers(14, &syn_aux_params, &g_virtual_to_real, &g_real_to_virtual, &(args->in_channels), &(args->out_channels), &lectura_a, &lectura_b, &lectura_t, &ret_values, &out_values, &(msg.data_in), &(msg.data_out), &(msg.g_real_to_virtual), &(msg.g_virtual_to_real));
+
+    printf("\n" PRINT_CYAN "rt_thread terminated." PRINT_RESET "\n");
+    pthread_exit(NULL);
+}
+
+
 void prepare_real_time (pthread_t id) {
     struct sched_param param;
     unsigned char dummy[MAX_SAFE_STACK];
@@ -47,9 +87,8 @@ void copy_1d_array (double * src, double * dst, int n_elems) {
 
 void * rt_thread(void * arg) {
     int i, cont_send = 0, lost_msg = 0;
-    rt_args * args;
+    
     struct timespec ts_target, ts_iter, ts_result, ts_start;
-    message msg;
     message msg2;
     pthread_t id;
 
@@ -62,11 +101,8 @@ void * rt_thread(void * arg) {
     double period_disp_real;
     double rafaga_viva_pts;
 
-    double * g_virtual_to_real;
-    double * g_real_to_virtual;
     double retval = 0;
     double c_real = 0, c_model = 0;
-    double * syn_aux_params;
 
     double ecm_result = 0;
 
@@ -74,23 +110,24 @@ void * rt_thread(void * arg) {
     args = arg;
     msg.c_real = c_real;
 
-    comedi_t * d = NULL;
-    Comedi_session session;
-    /*int in_channels [] = {0};
-    int out_channels [] = {0, 1};
-    int n_in_chan = 1;
-    int n_out_chan = 2;*/
-    double ret_values [1];
-    double out_values [2];
     int calib_chan = 0;
+
+    if (signal(SIGUSR1, rt_cleanup) == SIG_ERR) printf("Error catching SIGUSR1 at rt_thread.\n");
 
     msg.n_in_chan = args->n_in_chan;
     msg.n_out_chan = args->n_out_chan;
+    msg.data_in = NULL;
+    msg.data_out = NULL;
+    msg.g_virtual_to_real = NULL;
+    msg.g_real_to_virtual = NULL;
 
     d = open_device_comedi("/dev/comedi0");
 
     /*Envia el voltage para ver que hace el modelo*/
-    session = create_session_comedi(d, AREF_GROUND);
+    if (create_session_comedi(d, AREF_GROUND, &session) != OK) {
+        close_device_comedi(d);
+        pthread_exit(NULL);
+    }
 
     prepare_real_time(id);
 
@@ -100,7 +137,8 @@ void * rt_thread(void * arg) {
     /*CALIBRADO ESPACIAL-TEMPORAL*/
     if (args->n_in_chan > 0) {
 	    if ( ini_recibido (&min_real, &min_abs_real, &max_real, &max_real_relativo, &period_disp_real, session, calib_chan, args->period, args->freq, args->filename) == -1 ) {
-			close_device_comedi(d);
+			free_pointers(1, &session);
+            close_device_comedi(d);
 	        pthread_exit(NULL);
 		}
 		//printf("Periodo disparo = %f\n", period_disp_real);
@@ -188,6 +226,7 @@ void * rt_thread(void * arg) {
 
 			break;
 		default:
+            free_pointers(1, &session);
 			close_device_comedi(d);
         	pthread_exit(NULL);
 	}
@@ -201,9 +240,14 @@ void * rt_thread(void * arg) {
     double res_phase = 0;
     int cont_lectura=0;
     int size_lectura=2*args->freq;
-    double * lectura_a = (double *) malloc (sizeof(double) * 2*args->freq);
-    double * lectura_b = (double *) malloc (sizeof(double) * 2*args->freq);
-    double * lectura_t = (double *) malloc (sizeof(double) * 2*args->freq);
+    lectura_a = (double *) malloc (sizeof(double) * 2*args->freq);
+    lectura_b = (double *) malloc (sizeof(double) * 2*args->freq);
+    lectura_t = (double *) malloc (sizeof(double) * 2*args->freq);
+
+
+
+    ret_values = (double *) malloc (sizeof(double) * args->n_in_chan);
+    out_values = (double *) malloc (sizeof(double) * args->n_out_chan);
 
 
     clock_gettime(CLOCK_MONOTONIC, &ts_target);
@@ -229,8 +273,8 @@ void * rt_thread(void * arg) {
             msg.t_absol = (ts_result.tv_sec * NSEC_PER_SEC + ts_result.tv_nsec) * 0.000001;
             msg.t_unix = (ts_iter.tv_sec * NSEC_PER_SEC + ts_iter.tv_nsec) * 0.000001;
 
-            out_values[0] = msg.c_model;
-            out_values[1] = msg.v_model_scaled;
+            if (args->n_out_chan >= 1) out_values[0] = msg.c_model;
+            if (args->n_out_chan >= 2) out_values[1] = msg.v_model_scaled;
 
             msg.data_in = (double *) malloc (sizeof(double) * args->n_in_chan);
             msg.data_out = (double *) malloc (sizeof(double) * args->n_out_chan);
@@ -277,15 +321,9 @@ void * rt_thread(void * arg) {
             ts_add_time(&ts_target, 0, args->period);
 
             if (read_comedi(session, args->n_in_chan, args->in_channels, ret_values) != 0) {
+                free_pointers(1, &session);
                 close_device_comedi(d);
-                free(syn_aux_params);
-                free(g_virtual_to_real);
-    			free(g_real_to_virtual);
-    			free(args->in_channels);
-    			free(args->out_channels);
-                free(lectura_a);
-                free(lectura_b);
-                free(lectura_t);
+                free_pointers(10, &syn_aux_params, &g_virtual_to_real, &g_real_to_virtual, &(args->in_channels), &(args->out_channels), &lectura_a, &lectura_b, &lectura_t, &ret_values, &out_values);
                 pthread_exit(NULL);
             }
         }
@@ -304,12 +342,14 @@ void * rt_thread(void * arg) {
 
 
     /*PULSOS DE SINCRONIZACION*/
-    out_values[0] = 0;
-    out_values[1] = -10;
+    if (args->n_out_chan >= 1) out_values[0] = 0;
+    if (args->n_out_chan >= 2) out_values[1] = -10;
     write_comedi(session, args->n_out_chan, args->out_channels, out_values);
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts_target, NULL);
     ts_add_time(&ts_target, 0, args->period);
-    out_values[1] = 10;
+    
+    if (args->n_out_chan >= 2) out_values[1] = 10;
+    
     write_comedi(session, args->n_out_chan, args->out_channels, out_values);
 
     for (i = 0; i < args->points * args->s_points; i++) {
@@ -342,8 +382,8 @@ void * rt_thread(void * arg) {
             msg.t_unix = (ts_iter.tv_sec * NSEC_PER_SEC + ts_iter.tv_nsec) * 0.000001;
 
             /*ENVIO POR LA TARJETA*/
-            out_values[0] = c_model;
-            out_values[1] = msg.v_model_scaled;
+            if (args->n_out_chan >= 1) out_values[0] = c_model;
+            if (args->n_out_chan >= 2) out_values[1] = msg.v_model_scaled;
 
             /*GUARDAR INFO*/
             /*msg.g_real_to_virtual = g_real_to_virtual;
@@ -495,15 +535,9 @@ void * rt_thread(void * arg) {
                     out_values[i] = 0;
                 }
                 write_comedi(session, args->n_out_chan, args->out_channels, out_values);
+                free_pointers(1, &session);
                 close_device_comedi(d);
-                free(syn_aux_params);
-                free(g_virtual_to_real);
-    			free(g_real_to_virtual);
-    			free(args->in_channels);
-    			free(args->out_channels);
-                free(lectura_a);
-                free(lectura_b);
-                free(lectura_t);
+                free_pointers(10, &syn_aux_params, &g_virtual_to_real, &g_real_to_virtual, &(args->in_channels), &(args->out_channels), &lectura_a, &lectura_b, &lectura_t, &ret_values, &out_values);
                 pthread_exit(NULL);
             }
         }
@@ -522,6 +556,7 @@ void * rt_thread(void * arg) {
     	out_values[i] = 0;
     }
     write_comedi(session, args->n_out_chan, args->out_channels, out_values);
+    free_pointers(1, &session);
     close_device_comedi(d);
 
     msg.id = 2;
@@ -529,14 +564,7 @@ void * rt_thread(void * arg) {
         perror("Closing message not sent");
     }
 
-    free(syn_aux_params);
-    free(g_virtual_to_real);
-    free(g_real_to_virtual);
-    free(args->in_channels);
-    free(args->out_channels);
-    free(lectura_a);
-    free(lectura_b);
-    free(lectura_t);
+    free_pointers(10, &syn_aux_params, &g_virtual_to_real, &g_real_to_virtual, &(args->in_channels), &(args->out_channels), &lectura_a, &lectura_b, &lectura_t, &ret_values, &out_values);
 
     printf("End of rt_thread. Not sent messages: %d\n", lost_msg);
     pthread_exit(NULL);

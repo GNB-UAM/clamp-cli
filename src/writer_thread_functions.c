@@ -1,11 +1,33 @@
 #include "../includes/writer_thread_functions.h"
 
 
+/* Global variables */
+FILE * f1 = NULL;
+FILE * f2 = NULL;
+FILE * f3 = NULL;
+char * filename_1 = NULL;
+char * filename_2 = NULL;
+char * filename_3 = NULL;
+
+
+void writer_cleanup () {
+    printf("\n" PRINT_RED "SIGUSR2 termination to writer_thread." PRINT_RESET "\n");
+
+    if (f1 != NULL) fclose(f1);
+    if (f2 != NULL) fclose(f2);
+    if (f3 != NULL) fclose(f3);
+
+    free_pointers(3, &filename_1, &filename_2, &filename_3);
+
+    printf("\n" PRINT_CYAN "writer_thread terminated." PRINT_RESET "\n");
+    pthread_exit(NULL);
+}
+
+
 void * writer_thread(void * arg) {
     message msg;
     message msg2;
     pthread_t id;
-    FILE * f1, * f2, *f3;
     writer_args * args;
     int i = 0, j;
     int s_points;
@@ -13,9 +35,11 @@ void * writer_thread(void * arg) {
     args = arg;
     id = pthread_self();
 
-    char * filename_1 = (char *) malloc (sizeof(char)*(strlen(args->filename)+7));
-    char * filename_2 = (char *) malloc (sizeof(char)*(strlen(args->filename)+7));
-    char * filename_3 = (char *) malloc (sizeof(char)*(strlen(args->path)+13));
+    if (signal(SIGUSR2, writer_cleanup) == SIG_ERR) printf("Error catching SIGUSR2 at writer_thread.\n");
+
+    filename_1 = (char *) malloc (sizeof(char)*(strlen(args->filename)+7));
+    filename_2 = (char *) malloc (sizeof(char)*(strlen(args->filename)+7));
+    filename_3 = (char *) malloc (sizeof(char)*(strlen(args->path)+13));
 
     if (sprintf(filename_1, "%s_1.txt", args->filename) < 0) {
         printf("Error creating file 1 name\n;");
@@ -28,7 +52,7 @@ void * writer_thread(void * arg) {
     }
 
     if (sprintf(filename_3, "%s/summary.txt", args->path) < 0) {
-        printf("Error creating file 2 name\n;");
+        printf("Error creating summary file name\n;");
         pthread_exit(NULL);
     }
 
@@ -84,6 +108,7 @@ void * writer_thread(void * arg) {
 
     //fprintf(f3, "%s\nModel: %d\nSynapse: %d\nFreq: %d ns\n\n\n", args->filename, args->model, args->type_syn, args->freq);
     fclose(f3);
+    f3 = NULL;
 
     /*****************/
 
@@ -126,9 +151,7 @@ void * writer_thread(void * arg) {
     
     fclose(f1);
     fclose(f2);
-    free(filename_1);
-    free(filename_2);
-    free(filename_3);
+    free_pointers(3, &filename_1, &filename_2, &filename_3);
 
     printf("End writer_thread.\n");
     pthread_exit(NULL);

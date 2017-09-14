@@ -1,7 +1,7 @@
 #include "../includes/comedi_functions.h"
 
 comedi_t * open_device_comedi (char * dev_name) {
-	comedi_t *device;
+	comedi_t * device;
 
 	device = comedi_open(dev_name);
 	if(device == NULL)
@@ -23,31 +23,33 @@ int close_device_comedi (comedi_t * device) {
 }
 
 
-Comedi_session create_session_comedi (comedi_t * device, int aref) {
-	Comedi_session d;
+int create_session_comedi (comedi_t * device, int aref, Comedi_session ** session_ptr) {
+	Comedi_session * session;
+	*session_ptr = (Comedi_session *) malloc (sizeof(Comedi_session));
+	session = *session_ptr;
+	
+	session->device = device;
+	session->range = 0; //get_range_comedi(device, subdev, chan, unit, min, max);
+	session->aref = aref;
 
-	d.device = device;
-	d.range = 0; //get_range_comedi(device, subdev, chan, unit, min, max);
-	d.aref = aref;
 
-
-	d.in_subdev = comedi_find_subdevice_by_type(device, COMEDI_SUBD_AI, 0);
-	if (d.in_subdev == -1) {
-		if (comedi_close(device) == -1) {
-			comedi_perror("Error with comedi_close");
-		}
+	session->in_subdev = comedi_find_subdevice_by_type(device, COMEDI_SUBD_AI, 0);
+	if (session->in_subdev == -1) {
 		comedi_perror("Error finding input subdevice");
+
+		free(session);
+		return ERR;
 	}
 
-	d.out_subdev = comedi_find_subdevice_by_type(device, COMEDI_SUBD_AO, 0);
-	if (d.out_subdev == -1) {
-		if (comedi_close(device) == -1) {
-			comedi_perror("Error with comedi_close");
-		}
+	session->out_subdev = comedi_find_subdevice_by_type(device, COMEDI_SUBD_AO, 0);
+	if (session->out_subdev == -1) {
 		comedi_perror("Error finding output subdevice");
+
+		free(session);
+		return ERR;
 	}
 
-	return d;
+	return OK;
 }
 
 /*int get_range_comedi (comedi_t * device, int subdev, int chan, double min, double max, int unit) {
@@ -61,40 +63,40 @@ Comedi_session create_session_comedi (comedi_t * device, int aref) {
 	return range;
 }*/
 
-comedi_range * get_range_info_comedi (Comedi_session session, int direction, int chan) {
+comedi_range * get_range_info_comedi (Comedi_session * session, int direction, int chan) {
 	comedi_range * range_info;
 	int subdev;
 
 	if (direction == COMEDI_INPUT) {
-		subdev = session.in_subdev;
+		subdev = session->in_subdev;
 	} else if (direction == COMEDI_OUTPUT) {
-		subdev = session.out_subdev;
+		subdev = session->out_subdev;
 	} else {
 		return NULL;
 	}
 
-	range_info = comedi_get_range(session.device, subdev, chan, session.range);
+	range_info = comedi_get_range(session->device, subdev, chan, session->range);
 
 	return range_info;
 }
 
-lsampl_t get_maxdata_comedi (Comedi_session session, int direction, int chan) {
+lsampl_t get_maxdata_comedi (Comedi_session * session, int direction, int chan) {
 	lsampl_t maxdata;
 	int subdev;
 
 	if (direction == COMEDI_INPUT) {
-		subdev = session.in_subdev;
+		subdev = session->in_subdev;
 	} else if (direction == COMEDI_OUTPUT) {
-		subdev = session.out_subdev;
+		subdev = session->out_subdev;
 	} else {
 		return 0;
 	}
 
-	maxdata = comedi_get_maxdata(session.device, subdev, chan);
+	maxdata = comedi_get_maxdata(session->device, subdev, chan);
 	return maxdata;
 }
 
-int read_comedi (Comedi_session session, int n_channels, int * channels, double * ret) {
+int read_comedi (Comedi_session * session, int n_channels, int * channels, double * ret) {
 	int i;
 	double aux;
 	comedi_range * range_info;
@@ -116,7 +118,7 @@ int read_comedi (Comedi_session session, int n_channels, int * channels, double 
 }
 
 
-int write_comedi (Comedi_session session, int n_channels, int * channels, double * values) {
+int write_comedi (Comedi_session * session, int n_channels, int * channels, double * values) {
 	int i;
 	double aux;
 	comedi_range * range_info;
@@ -136,12 +138,12 @@ int write_comedi (Comedi_session session, int n_channels, int * channels, double
 }
 
 
-int read_single_data_comedi (Comedi_session session, comedi_range * range_info, lsampl_t maxdata, int chan, double * ret) {
+int read_single_data_comedi (Comedi_session * session, comedi_range * range_info, lsampl_t maxdata, int chan, double * ret) {
 	lsampl_t data;
 	double physical_value;
 	int retval;
 
-	retval = comedi_data_read(session.device, session.in_subdev, chan, session.range, session.aref, &data);
+	retval = comedi_data_read(session->device, session->in_subdev, chan, session->range, session->aref, &data);
 	if(retval < 0)
 	{
 		comedi_perror("read");
@@ -161,7 +163,7 @@ int read_single_data_comedi (Comedi_session session, comedi_range * range_info, 
 }
 
 
-int write_single_data_comedi (Comedi_session session, comedi_range * range_info, lsampl_t maxdata, int chan, double data) {
+int write_single_data_comedi (Comedi_session * session, comedi_range * range_info, lsampl_t maxdata, int chan, double data) {
 	lsampl_t comedi_value;
 
 	comedi_value = comedi_from_phys(data, range_info, maxdata);
@@ -170,5 +172,5 @@ int write_single_data_comedi (Comedi_session session, comedi_range * range_info,
 		return -1;
 	}
 
-	return comedi_data_write(session.device, session.out_subdev, chan, session.range, session.aref, comedi_value);
+	return comedi_data_write(session->device, session->out_subdev, chan, session->range, session->aref, comedi_value);
 }
