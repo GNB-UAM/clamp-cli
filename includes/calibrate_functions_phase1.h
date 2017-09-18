@@ -19,7 +19,7 @@
 #define TRUE 1
 #define FALSE 0
 
-int ini_recibido (double *min, double *min_abs, double *max, double *max_relativo, double *period_signal, Comedi_session session, int chan, int period, int freq, char* filename);
+int ini_recibido (double *min, double *min_abs, double *max, double *max_relativo, double *period_signal, Comedi_session * session, int chan, int period, int freq, char* filename);
 
 int signal_convolution (double * lectura, int size_l, double * result, int size_r);
 

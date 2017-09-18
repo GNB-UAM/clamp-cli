@@ -8,6 +8,8 @@
 #include <mqueue.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <signal.h>
+#include <stdarg.h>
 #include "types.h"
 
 
@@ -43,6 +45,8 @@ int send_to_queue (void * msqid, message * msg);
 int receive_from_queue (void * msqid, message * msg);
 
 int close_queue (void ** msqid);
+
+void free_pointers (int n, ...);
 
 
 #endif /* queue_functions.h */

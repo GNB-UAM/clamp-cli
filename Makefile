@@ -20,7 +20,7 @@ obj/rt_thread_functions.o: src/rt_thread_functions.c includes/rt_thread_function
 obj/writer_thread_functions.o: src/writer_thread_functions.c includes/writer_thread_functions.h includes/queue_functions.h
 	$(CC) $(CCFLAGS) -c src/writer_thread_functions.c -o obj/writer_thread_functions.o
 
-obj/comedi_functions.o: src/comedi_functions.c includes/comedi_functions.h
+obj/comedi_functions.o: src/comedi_functions.c includes/comedi_functions.h includes/types.h
 	$(CC) $(CCFLAGS) -c $(LIBS_COMEDI) src/comedi_functions.c -o obj/comedi_functions.o
 
 obj/calibrate_functions_phase1.o: src/calibrate_functions_phase1.c includes/calibrate_functions_phase1.h
