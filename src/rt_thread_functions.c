@@ -160,9 +160,9 @@ void * rt_thread(void * arg) {
     		g_real_to_virtual = (double *) malloc (sizeof(double) * 2);
 			if (args->model==0){
                 g_virtual_to_real[G_FAST] = 0.0;
-                g_virtual_to_real[G_SLOW] = 0.01;
+                g_virtual_to_real[G_SLOW] = 0.02;
                 g_real_to_virtual[G_FAST] = 0.0;
-                g_real_to_virtual[G_SLOW] = 0.02;
+                g_real_to_virtual[G_SLOW] = 0.04;
 
             }else {
                 g_virtual_to_real[G_FAST] = 0.0;
@@ -429,7 +429,7 @@ void * rt_thread(void * arg) {
             }else if(args->calibration==7){
                 if (cal_7==TRUE){
                     double paso_fast = 0.2;//0.2; //0.3
-                    double max_fast = 1;//1.8; //2.7
+                    double max_fast = 1.8;//1.8; //2.7
                     double paso_slow = 0.01;
                     double max_slow = 0.11;
 
