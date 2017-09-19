@@ -1,12 +1,10 @@
+#ifndef CALIBRATE_FUNCTIONS_PHASE2_H__
+#define CALIBRATE_FUNCTIONS_PHASE2_H__
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-
-#define ERR -1
-#define OK 0
-#define TRUE 1
-#define FALSE 0
-
+#include "types.h"
 
 int calc_ecm (double v_a, double v_b, int life_burst_points, double *ecm_result);
 
@@ -21,3 +19,5 @@ int is_syn_by_slope(double val_sin);
 int is_syn_by_variance(double val_sin);
 
 void change_g (double *g);
+
+#endif 

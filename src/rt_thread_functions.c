@@ -1,9 +1,12 @@
 #include "../includes/rt_thread_functions.h"
 
-/* Global variables */
+/************************
+GLOBAL VARIABLES
+************************/
 comedi_t * d = NULL;
 Comedi_session * session = NULL;
 rt_args * args;
+calibration_args * cal_struct = NULL;
 message msg;
 double * syn_aux_params = NULL;
 double * g_virtual_to_real = NULL;
@@ -14,7 +17,9 @@ double * lectura_t = NULL;
 double * ret_values = NULL;
 double * out_values = NULL;
 
-
+/************************
+RT CLEANUP
+************************/
 void rt_cleanup () {
     int i = 0;
 
@@ -39,7 +44,9 @@ void rt_cleanup () {
     pthread_exit(NULL);
 }
 
-
+/************************
+PREPARE REAL TIME
+************************/
 void prepare_real_time (pthread_t id) {
     struct sched_param param;
     unsigned char dummy[MAX_SAFE_STACK];
@@ -74,6 +81,9 @@ void prepare_real_time (pthread_t id) {
     return;
 }
 
+/************************
+COPY 1D ARRAY
+************************/
 void copy_1d_array (double * src, double * dst, int n_elems) {
     int i;
 
@@ -84,8 +94,16 @@ void copy_1d_array (double * src, double * dst, int n_elems) {
     return;
 }
 
-
+/************************
+RT THREAD
+************************/
 void * rt_thread(void * arg) {
+
+    /************************
+    START
+    ************************/
+
+    //Declarations
     int i, cont_send = 0, lost_msg = 0;
     
     struct timespec ts_target, ts_iter, ts_result, ts_start;
@@ -121,20 +139,20 @@ void * rt_thread(void * arg) {
     msg.g_virtual_to_real = NULL;
     msg.g_real_to_virtual = NULL;
 
+    //Comedi & RT
     d = open_device_comedi("/dev/comedi0");
-
-    /*Envia el voltage para ver que hace el modelo*/
     if (create_session_comedi(d, AREF_GROUND, &session) != OK) {
         close_device_comedi(d);
         pthread_exit(NULL);
     }
-
     prepare_real_time(id);
 
     args->ini(args->vars, &min_model, &min_abs_model, &max_model);
 
 
-    /*CALIBRADO ESPACIAL-TEMPORAL*/
+    /************************
+    CALIBRADO ESPACIO-TEMPORAL
+    ************************/
     if (args->n_in_chan > 0) {
 	    if ( ini_recibido (&min_real, &min_abs_real, &max_real, &max_real_relativo, &period_disp_real, session, calib_chan, args->period, args->freq, args->filename) == -1 ) {
 			free_pointers(1, &session);
@@ -158,6 +176,17 @@ void * rt_thread(void * arg) {
         period_disp_real = 0;
     }
 
+    /*CALIBRATION STRUCT*/
+    cal_struct = (calibration_args *) malloc (sizeof(calibration_args));
+    cal_struct->min_abs_model=min_abs_model;
+    cal_struct->max_model=max_model;
+    cal_struct->min_abs_real=min_abs_real;
+    cal_struct->max_real=max_real;
+    cal_struct->scale_virtual_to_real=scale_virtual_to_real;
+    cal_struct->scale_real_to_virtual=scale_real_to_virtual;
+    cal_struct->offset_virtual_to_real=offset_virtual_to_real;
+    cal_struct->offset_real_to_virtual=offset_real_to_virtual;
+
     /*CALIBRADO TEMPORAL*/
     msg2.i = args->s_points;
     msg2.t_unix = period_disp_real;
@@ -167,6 +196,10 @@ void * rt_thread(void * arg) {
     //printf("\n - Phase 1 OK\n - Phase 2 START\n\n");
     /*fflush(stdout);
     sleep(1);*/
+
+    /************************
+    SINAPSIS
+    ************************/
 
     double ini_k1=0.4;
     double ini_k2=0.01;
@@ -226,7 +259,7 @@ void * rt_thread(void * arg) {
 
 			break;
 		default:
-            free_pointers(1, &session);
+            free_pointers(2, &session, &cal_struct);
 			close_device_comedi(d);
         	pthread_exit(NULL);
 	}
@@ -244,11 +277,8 @@ void * rt_thread(void * arg) {
     lectura_b = (double *) malloc (sizeof(double) * 2*args->freq);
     lectura_t = (double *) malloc (sizeof(double) * 2*args->freq);
 
-
-
     ret_values = (double *) malloc (sizeof(double) * args->n_in_chan);
     out_values = (double *) malloc (sizeof(double) * args->n_out_chan);
-
 
     clock_gettime(CLOCK_MONOTONIC, &ts_target);
     ts_assign (&ts_start,  ts_target);
@@ -321,7 +351,7 @@ void * rt_thread(void * arg) {
             ts_add_time(&ts_target, 0, args->period);
 
             if (read_comedi(session, args->n_in_chan, args->in_channels, ret_values) != 0) {
-                free_pointers(1, &session);
+                free_pointers(2, &session, &cal_struct);
                 close_device_comedi(d);
                 free_pointers(10, &syn_aux_params, &g_virtual_to_real, &g_real_to_virtual, &(args->in_channels), &(args->out_channels), &lectura_a, &lectura_b, &lectura_t, &ret_values, &out_values);
                 pthread_exit(NULL);
@@ -402,6 +432,9 @@ void * rt_thread(void * arg) {
             write_comedi(session, args->n_out_chan, args->out_channels, out_values);
 
             /*CALIBRACION*/
+            auto_calibration(args, cal_struct, &ret_values, rafaga_viva_pts, &ecm_result, &msg, &cal_on, g_virtual_to_real, g_real_to_virtual);
+
+/*********
             if(args->calibration==1 || args->calibration==2 || args->calibration==3){
                 //Electrica en fase - ecm
                 int ret_ecm = calc_ecm(args->vars[0] * scale_virtual_to_real + offset_virtual_to_real, ret_values[0], rafaga_viva_pts, &ecm_result);
@@ -429,7 +462,11 @@ void * rt_thread(void * arg) {
                     }
 
                 }
-            }else if (args->calibration==4){
+            }
+*////////////
+
+
+            if (args->calibration==4){
                 //Electrica y var
                 if(cont_lectura<size_lectura){
                     /*Guardamos info*/
@@ -535,7 +572,7 @@ void * rt_thread(void * arg) {
                     out_values[i] = 0;
                 }
                 write_comedi(session, args->n_out_chan, args->out_channels, out_values);
-                free_pointers(1, &session);
+                free_pointers(2, &session, &cal_struct);
                 close_device_comedi(d);
                 free_pointers(10, &syn_aux_params, &g_virtual_to_real, &g_real_to_virtual, &(args->in_channels), &(args->out_channels), &lectura_a, &lectura_b, &lectura_t, &ret_values, &out_values);
                 pthread_exit(NULL);
@@ -556,7 +593,7 @@ void * rt_thread(void * arg) {
     	out_values[i] = 0;
     }
     write_comedi(session, args->n_out_chan, args->out_channels, out_values);
-    free_pointers(1, &session);
+    free_pointers(2, &session, &cal_struct);
     close_device_comedi(d);
 
     msg.id = 2;

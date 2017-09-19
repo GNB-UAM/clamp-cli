@@ -362,8 +362,6 @@ int main (int argc, char * argv[]) {
     r_args.freq = freq;
     r_args.filename = filename;
     r_args.model = model;
-    r_args.in_channels = NULL;
-    r_args.out_channels = NULL;
 
     w_args.path = path;
     w_args.filename = filename;
