@@ -16,6 +16,7 @@
 #include <getopt.h>
 #include "calibrate_functions_phase2.h"
 #include "queue_functions.h"
+#include "model_library.h"
 
 int auto_calibration(
 					rt_args * args,
@@ -24,9 +25,16 @@ int auto_calibration(
 					double rafaga_viva_pts,
 					double * ecm_result,
 					message * msg,
-					int * cal_on,
 					double * g_virtual_to_real,
-					double * g_real_to_virtual
+					double * g_real_to_virtual,
+                    double * lectura_a,
+                    double * lectura_b,
+                    double * lectura_t,
+                    int size_lectura,
+                    int cont_send,
+                    double * syn_aux_params,
+                    double ini_k1,
+                    double ini_k2
 					);
 
 #endif 

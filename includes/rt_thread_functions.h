@@ -2,7 +2,6 @@
 #define RT_THREAD_FUNCTIONS_H__
 
 #include "time_functions.h"
-//#include "comedi_functions.h"
 #include "model_library.h"
 #include "queue_functions.h"
 #include "calibrate_functions_phase1.h"
@@ -13,9 +12,6 @@
 #define PRIORITY (99)
 #define MAX_LAT (900000)
 #define CORE (0)
-
-
-
 
 void prepare_real_time (pthread_t id);
 

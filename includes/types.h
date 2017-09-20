@@ -67,7 +67,9 @@ typedef struct {
     double scale_virtual_to_real;
     double scale_real_to_virtual;
     double offset_virtual_to_real;
-    double offset_real_to_virtual; 
+    double offset_real_to_virtual;
+    double max_real_relativo;
+    double min_real;
 } calibration_args;
 
 #endif

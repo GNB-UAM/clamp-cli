@@ -160,8 +160,6 @@ void * rt_thread(void * arg) {
 	        pthread_exit(NULL);
 		}
 		//printf("Periodo disparo = %f\n", period_disp_real);
-        /*fflush(stdout);
-        sleep(1);*/
         //period_disp_real = 0.27;
 	    calcula_escala (min_abs_model, max_model, min_abs_real, max_real, &scale_virtual_to_real, &scale_real_to_virtual, &offset_virtual_to_real, &offset_real_to_virtual);
         rafaga_viva_pts = args->freq * period_disp_real;
@@ -182,6 +180,8 @@ void * rt_thread(void * arg) {
     cal_struct->max_model=max_model;
     cal_struct->min_abs_real=min_abs_real;
     cal_struct->max_real=max_real;
+    cal_struct->min_real=min_real;
+    cal_struct->max_real_relativo=max_real_relativo;
     cal_struct->scale_virtual_to_real=scale_virtual_to_real;
     cal_struct->scale_real_to_virtual=scale_real_to_virtual;
     cal_struct->offset_virtual_to_real=offset_virtual_to_real;
@@ -203,6 +203,12 @@ void * rt_thread(void * arg) {
 
     double ini_k1=0.4;
     double ini_k2=0.01;
+
+    /************************
+    PREPARATION
+    ************************/
+
+    //Synapse type
 
     switch (args->type_syn) {
 		case ELECTRIC:
@@ -264,21 +270,25 @@ void * rt_thread(void * arg) {
         	pthread_exit(NULL);
 	}
 
+    //VARIABLES
 
     double sum_ecm;
     int t_obs=5;
     int sum_ecm_cont=0;
-
-    int cal_on = TRUE;
     double res_phase = 0;
     int cont_lectura=0;
     int size_lectura=2*args->freq;
+
     lectura_a = (double *) malloc (sizeof(double) * 2*args->freq);
     lectura_b = (double *) malloc (sizeof(double) * 2*args->freq);
     lectura_t = (double *) malloc (sizeof(double) * 2*args->freq);
 
     ret_values = (double *) malloc (sizeof(double) * args->n_in_chan);
     out_values = (double *) malloc (sizeof(double) * args->n_out_chan);
+
+    /************************
+    INITIAL INTERACTION
+    ************************/
 
     clock_gettime(CLOCK_MONOTONIC, &ts_target);
     ts_assign (&ts_start,  ts_target);
@@ -338,8 +348,6 @@ void * rt_thread(void * arg) {
                 }
             }
 
-            /*msg.g_real_to_virtual = g_real_to_virtual;
-            msg.g_virtual_to_real = g_virtual_to_real;*/
             msg.g_real_to_virtual = (double *) malloc (sizeof(double) * msg.n_g);
             msg.g_virtual_to_real = (double *) malloc (sizeof(double) * msg.n_g);
 
@@ -365,7 +373,6 @@ void * rt_thread(void * arg) {
         sum_ecm = sum_ecm / sum_ecm_cont;
         set_is_syn_by_percentage(sum_ecm);
     }
-    cont_lectura=0;
     int cont_6=0;
     int counter_mapa=0;
     int cal_7=TRUE;
@@ -381,6 +388,10 @@ void * rt_thread(void * arg) {
     if (args->n_out_chan >= 2) out_values[1] = 10;
     
     write_comedi(session, args->n_out_chan, args->out_channels, out_values);
+
+    /************************
+    INTERACTION
+    ************************/
 
     for (i = 0; i < args->points * args->s_points; i++) {
         /*TOCA INTERACCION*/
@@ -432,102 +443,13 @@ void * rt_thread(void * arg) {
             write_comedi(session, args->n_out_chan, args->out_channels, out_values);
 
             /*CALIBRACION*/
-            auto_calibration(args, cal_struct, ret_values, rafaga_viva_pts, &ecm_result, &msg, &cal_on, g_virtual_to_real, g_real_to_virtual);
-
-
-            if (args->calibration==4){
-                //Electrica y var
-                if(cont_lectura<size_lectura){
-                    /*Guardamos info*/
-                    lectura_b[cont_lectura]=args->vars[0] * scale_virtual_to_real + offset_virtual_to_real;
-                    lectura_a[cont_lectura]=ret_values[0];
-                    lectura_t[cont_lectura]=msg.t_absol;
-                    msg.ecm = res_phase;
-                    cont_lectura++;
-                }else{
-                    /*Ejecuta metrica*/
-                    int is_syn = calc_phase (lectura_b, lectura_a, lectura_t, size_lectura, max_real_relativo, min_real, &res_phase, args->anti);
-                    msg.ecm = res_phase;
-
-                    //printf("var = %f\n", msg.ecm);
-                    if(cal_on){
-                        if (is_syn==TRUE){
-                            //printf("CALIBRATION END: g=%f\n", g_virtual_to_real[0]);
-                            cal_on=FALSE;
-                        }else if (is_syn==FALSE){
-                            change_g(&g_virtual_to_real[0]);
-                            change_g(&g_real_to_virtual[0]);
-                        } 
-                    }
-                    cont_lectura=0;
-                }
-            }else if(args->calibration==6){
-                cont_6++;
-                if(cont_6==10000*3){
-                    args->params[R_HR]+=0.0006;
-                    //printf("%f\n", args->params[R_HR]);
-                    cont_6=0;
-                }
-                int ret_ecm = calc_ecm(args->vars[0] * scale_virtual_to_real + offset_virtual_to_real, ret_values[0], rafaga_viva_pts, &ecm_result);
-                msg.ecm = ecm_result;
-                msg.extra = args->params[R_HR];
-                
-            }else if(args->calibration==7){
-                if (cal_7==TRUE){
-                    double paso_fast = 0.2;//0.2; //0.3
-                    double max_fast = 1.8;//1.8; //2.7
-                    double paso_slow = 0.01;
-                    double max_slow = 0.11;
-
-                    //Mapa de conductancia 
-                    counter_mapa++;
-                    if (counter_mapa>=10000*10){ //Cada 10s hay cambio
-                        counter_mapa=0;
-                        g_virtual_to_real[G_SLOW] += paso_slow;
-                        if (g_virtual_to_real[G_SLOW]>max_slow){
-                            g_virtual_to_real[G_SLOW] = 0;
-                            g_real_to_virtual[G_FAST] += paso_fast;
-                            if(g_real_to_virtual[G_FAST]>=max_fast){
-                                printf("FIN\n");
-                                printf("Apuntar: %d\n", cont_send);
-                                g_virtual_to_real[G_SLOW] = 0;
-                                g_real_to_virtual[G_FAST] = 0;
-                                cal_7=FALSE;
-                            }
-                        }
-                    }
-                }
-            }else if(args->calibration==8){
-                if (cal_7==TRUE){
-                    double paso_k1 = 0.3;
-                    double paso_k2 = 0.02;
-                    double max_k1 = 1.6;
-                    double max_k2 = 0.1;
-
-                    //Mapa de k 
-                    counter_mapa++;
-                    if (counter_mapa>=10000*10){ //Cada 10s hay cambio
-                        counter_mapa=0;
-                        syn_aux_params[SC_MS_K1]+=paso_k1;
-                        if(syn_aux_params[SC_MS_K1]>=max_k1){
-                            syn_aux_params[SC_MS_K1]=ini_k1;
-                            syn_aux_params[SC_MS_K2]+=paso_k2;
-                            if( syn_aux_params[SC_MS_K2]>=max_k2){
-                                printf("FIN\n");
-                                printf("Apuntar: %d\n", cont_send);
-                                syn_aux_params[SC_MS_K1]=0;
-                                syn_aux_params[SC_MS_K2]=0;
-                                cal_7=FALSE;
-                            }
-                        }
-                    }
-                }
-                msg.ecm=syn_aux_params[SC_MS_K1];
-                msg.extra=syn_aux_params[SC_MS_K2];
-
-            }
+            auto_calibration(
+                            args, cal_struct, ret_values, rafaga_viva_pts, &ecm_result, 
+                            &msg, g_virtual_to_real, g_real_to_virtual, 
+                            lectura_a, lectura_b, lectura_t, size_lectura, cont_send,
+                            syn_aux_params, ini_k1, ini_k2
+                            );
             
-
             /*GUARDAR INFO*/
             if (send_to_queue(args->msqid, &msg) == ERR) lost_msg++;
 
