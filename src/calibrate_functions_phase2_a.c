@@ -46,7 +46,7 @@ int auto_calibration(
                 printf("CALIBRATION END: g=%f\n", g_virtual_to_real[0]);
                 cal_on=FALSE;
             }else if(is_syn==FALSE && cal_on==TRUE){
-                //printf("%f\n", g_virtual_to_real[0]);
+                printf("%f\n", g_virtual_to_real[0]);
                 change_g(&g_virtual_to_real[0]);
                 change_g(&g_real_to_virtual[0]);
             }
