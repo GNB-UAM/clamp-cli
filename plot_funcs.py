@@ -8,10 +8,10 @@ import math
 #########
 # Voltage
 #########
-def voltage(data):
+def plot_voltage(data):
 	plt.figure(figsize=(12,6))
-	plt.plot(data.time, data.v_model_scaled, label="Model neuron")
-	plt.plot(data.time, data.data_in[0], label="Real neuron")
+	plt.plot(data.time, data.v_model_scaled, label="Model neuron", linewidth=0.4)
+	plt.plot(data.time, data.data_in[0], label="Real neuron", linewidth=0.4)
 	plt.plot(data.time, data.c_model, label="Current model", linewidth=0.1)
 	plt.plot(data.time, data.c_viva, label="Current real", linewidth=0.1)
 	plt.legend()
@@ -24,7 +24,7 @@ def voltage(data):
 #########
 # Latencies
 #########
-def lat_dist(data):
+def plot_lat_dist(data):
 	lats = [int(math.modf(x/1000)[1]) for x in data.lat]
 	hist = np.histogram(lats, bins=np.arange(max(lats)+2))
 	values = hist[0]

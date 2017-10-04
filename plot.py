@@ -7,12 +7,16 @@ import math
 
 import plot_aux as aux
 import plot_funcs as funcs
+import plot_autocal as autocal
 
 ap = argparse.ArgumentParser()
 data1 = aux.DataStruct1(ap)
 data2 = aux.DataStruct2(ap)
 
-funcs.voltage(data1)
-funcs.lat_dist(data1)
+#funcs.plot_voltage(data1)
+#funcs.plot_lat_dist(data1)
 
-print (data2.ecm[0])
+autocal.plot_autocal(data1, data2)
+
+
+

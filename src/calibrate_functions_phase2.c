@@ -6,9 +6,6 @@
 *
 **********************************************/
 
-//Futuro: no variables globales 
-//        conseguir "orientacion a objetos" por medio de una struct que se pasa siempre
-
 /*
 * Args:
 *         v_a and v_b must be in the same scale

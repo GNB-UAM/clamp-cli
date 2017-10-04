@@ -54,6 +54,7 @@ class DataStruct1():
 		self.v_model_scaled = data[:,5]
 		self.c_model = data[:,6]
 		self.c_viva = data[:,7]
+		self.v_live = data[:, 8]
 
 		self.data_in = []
 		for j in range(8, 8 + self.n_in_chan):
@@ -65,20 +66,34 @@ class DataStruct1():
 
 class DataStruct2():
 	def __init__(self, ap):
+
 		#ARGUMENTS
 		args = vars(ap.parse_args())
-
 		filename = args["file"]+"_2.txt"
 		self.file = filename
 
-		dataset = pd.read_csv(args["file"]+"_2.txt", delimiter=' ', header=None)
+		#PRIMERA LINEA ES EL MODO DE AUTOCAL Y EL NUMERO DE DATOS
+		file = open(filename,'r')
+		line = file.readline()
+		channels = line.split(' ')
+		self.autocal = int(channels[0])
+		print("Autocal mode = " + str(self.autocal))
+		self.n_extra_data = int(channels[1]) 
+		print("Num extra columns = " + str(self.n_extra_data))
+
+		#READ DATA
+		dataset = pd.read_csv(filename, delimiter=' ', header=1)
 		array = dataset.values
-		array = array[:-1]
+
+		if(args["end"]==None):
+			args["end"] = sum(1 for line in open(filename,'r'))
+			
+		data = array[int(args["start"]):int(args["end"]),:]
 
 		#DATA TO VARIABLES
-		self.time = array[:, 0] / 1000
-		self.index = array[:,1]
-		self.ecm = array[:,2]
-		self.extra = array[:,3]
-		##Pendiente que sea dinámico
-		self.g0 = array[:,4]
+		self.time = data[:, 0] / 1000
+		self.index = data[:,1]	
+
+		self.data_extra = []
+		for j in range(2, 2+self.n_extra_data):
+			self.data_extra.append(data[:, j])

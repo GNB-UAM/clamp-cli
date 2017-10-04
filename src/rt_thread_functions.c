@@ -134,6 +134,7 @@ void * rt_thread(void * arg) {
 
     msg.n_in_chan = args->n_in_chan;
     msg.n_out_chan = args->n_out_chan;
+    msg.autocal = args->calibration;
     msg.data_in = NULL;
     msg.data_out = NULL;
     msg.g_virtual_to_real = NULL;
