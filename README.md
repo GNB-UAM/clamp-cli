@@ -1,6 +1,10 @@
 # clamp-cli
 Command line program to make neuron hybrid circuits
 
+# New versions in:
+
+# https://github.com/GNB-UAM/RTHybrid
+
 ### Developed by
 Rodrigo Amaducci (rodrigo.amaducci@uam.es - [scholar](https://scholar.google.es/citations?user=Lq4ogOQAAAAJ))
 
